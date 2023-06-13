@@ -1,0 +1,47 @@
+{
+  "name": "lime-academy-final-project-evm-bridge",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "interact": "npx nodemon",
+    "build": "hardhat compile",
+    "test:light": "hardhat test",
+    "test": "hardhat coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/iliev95/limeacademy-final-project.git"
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/iliev95/limeacademy-final-project.git/issues"
+  },
+  "homepage": "https://gitlab.com/iliev95/limeacademy-final-project#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.1",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@nomiclabs/hardhat-waffle": "^2.0.5",
+    "@openzeppelin/contracts": "^4.8.3",
+    "@typechain/ethers-v5": "^10.1.0",
+    "@types/node": "^20.2.5",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.14.0",
+    "hardhat-deploy": "^0.11.29",
+    "nodemon": "^2.0.22",
+    "rimraf": "^5.0.1",
+    "solidity-coverage": "^0.8.2",
+    "stdio": "^2.1.1",
+    "truffle": "^5.8.4",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4",
+    "web3": "^1.10.0"
+  }
+}
