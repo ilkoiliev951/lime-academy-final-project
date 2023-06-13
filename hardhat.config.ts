@@ -2,18 +2,18 @@ import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
 import secrets from './secrets.json';
-import "./scripts/deployment/hardhat-tasks/customDeploy";
+// import "./scripts/deployment/hardhat-tasks/customDeploy";
 import "@nomicfoundation/hardhat-toolbox";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.18",
+  solidity: "0.8.17",
   networks: {
     sepolia: {
       url: secrets.INFURA_SEPOLIA_URL,
       accounts: [secrets.PRIVATE_KEY],
     },
     goerli: {
-      url: secrets.INFURA_SEPOLIA_URL,
+      url: secrets.INFURA_GOERLI_URL,
       accounts: [secrets.PRIVATE_KEY],
     },
     development: {
