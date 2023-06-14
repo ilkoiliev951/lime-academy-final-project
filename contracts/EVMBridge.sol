@@ -9,8 +9,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
     error InvalidAmount();
     error InvalidTokenSymbol();
     error InvalidTokenName();
+    error TokenAlreadyCreated();
+    error InvalidChainId();
 
-contract EVMBridge is AccessControl, Ownable, ReentrancyGuard{
+contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
+    string constant private SEPOLIA_CHAIN_ID = "SEPOLIA";
+    string constant private GOERLI_CHAIN_ID = "GOERLI";
+
     mapping(string => address) public tokens;
     mapping(address => TransferRequest[]) public userTransferRequests;
 
@@ -71,6 +76,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard{
 
     event NewTokenCreated(
         string tokenSymbol,
+        string tokenName,
         address tokenAddress,
         uint timestamp
     );
@@ -105,11 +111,24 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard{
 
     }
 
-    function createToken (string memory _tokenName, string memory _tokenSymbol) external isValidName(_tokenName) isValidSymbol(_tokenSymbol){
-        // TODO: Handle, if token already deployed
-        address newTokenAddress = address(new GenericERC20Token(_tokenName, _tokenSymbol));
+    function createToken (string memory _tokenName, string memory _tokenSymbol, string memory chainId) external onlyOwner isValidName(_tokenName) isValidSymbol(_tokenSymbol) {
+        if (tokens[_tokenSymbol] == address(0)) {
+            revert TokenAlreadyCreated();
+        }
 
-        emit NewTokenCreated(_tokenSymbol, newTokenAddress, block.timestamp);
+        if (!(compareStrings(chainId, SEPOLIA_CHAIN_ID))  && !(compareStrings(chainId, GOERLI_CHAIN_ID))) {
+            revert InvalidChainId();
+        }
+
+        address newTokenAddress = address(0);
+        if (compareStrings(chainId, SEPOLIA_CHAIN_ID)) {
+            newTokenAddress = address(new GenericERC20Token(_tokenName, _tokenSymbol));
+        } else {
+            newTokenAddress = address(new WrappedERC20Token(_tokenName, _tokenSymbol));
+        }
+        tokens[_tokenSymbol] = newTokenAddress;
+
+        emit NewTokenCreated(_tokenSymbol, _tokenName, newTokenAddress, block.timestamp);
     }
 
     function mint(
@@ -121,8 +140,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard{
 
         address token = getERC20Token(_tokenSymbol);
         if (token == address(0)) {
-            // werc20 = factory.createWERC20(_tokenName, tokenSymbol);
-            // wrappedToNative[werc20] = _tokenAddress;
+
         }
     }
 
@@ -145,5 +163,9 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard{
 
     function getERC20Token(string memory _tokenSymbol) private view returns(address) {
         return tokens[_tokenSymbol];
+    }
+
+    function compareStrings(string memory val1, string memory val2) public pure returns (bool) {
+        return keccak256(abi.encodePacked(val1)) == keccak256(abi.encodePacked(val2));
     }
 }
