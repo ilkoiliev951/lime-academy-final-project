@@ -6,11 +6,11 @@ import "./GenericERC20Token.sol";
 import "./WrappedERC20Token.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-    error InvalidAmount();
-    error InvalidTokenSymbol();
-    error InvalidTokenName();
-    error TokenAlreadyCreated();
-    error InvalidChainId();
+error InvalidAmount();
+error InvalidTokenSymbol();
+error InvalidTokenName();
+error TokenAlreadyCreated();
+error InvalidChainId();
 
 contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     string constant private SEPOLIA_CHAIN_ID = "SEPOLIA";
@@ -48,9 +48,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     );
 
     event TokenAmountBurned(
-        address indexed user,
         string tokenSymbol,
-        address indexed tokenAddress,
         uint256 amount,
         string chainId,
         uint timestamp
@@ -59,7 +57,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     event TokenAmountMinted(
         address indexed user,
         string tokenSymbol,
-        address indexed tokenAddress,
+        string tokenName,
         uint256 amount,
         string chainId,
         uint timestamp
@@ -104,19 +102,18 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         _;
     }
 
-    function lock(uint256 amount, string memory _tokenSymbol) external onlyOwner isValidAmount(amount) isValidSymbol(_tokenSymbol){
+    function lock(uint256 amount, string memory _tokenSymbol) external onlyOwner isValidAmount(amount) isValidSymbol(_tokenSymbol) {
         // take a look at the signed messages
 
         // sign, transfer the amount, lock for a period of time.
-
     }
 
-    function createToken (string memory _tokenName, string memory _tokenSymbol, string memory chainId) external onlyOwner isValidName(_tokenName) isValidSymbol(_tokenSymbol) {
-        if (tokens[_tokenSymbol] == address(0)) {
+    function createToken(string memory _tokenName, string memory _tokenSymbol, string memory chainId) external onlyOwner isValidName(_tokenName) isValidSymbol(_tokenSymbol) {
+        if (tokens[_tokenSymbol] != address(0)) {
             revert TokenAlreadyCreated();
         }
 
-        if (!(compareStrings(chainId, SEPOLIA_CHAIN_ID))  && !(compareStrings(chainId, GOERLI_CHAIN_ID))) {
+        if (!(compareStrings(chainId, SEPOLIA_CHAIN_ID)) && !(compareStrings(chainId, GOERLI_CHAIN_ID))) {
             revert InvalidChainId();
         }
 
@@ -135,33 +132,38 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         string memory _tokenSymbol,
         string memory _tokenName,
         address _toUser,
-        address _tokenAddress,
-        uint256 _amount) external {
+        uint256 _amount,
+        string memory _chainId) external {
 
-        address token = getERC20Token(_tokenSymbol);
-        if (token == address(0)) {
-
+        address tokenAddress = getERC20Token(_tokenSymbol);
+        if (tokenAddress == address(0)) {
+            // tokenAddress = createToken(_tokenName, _tokenSymbol, _chainId);
         }
+
+        WrappedERC20Token(tokenAddress).mint(_toUser, _amount);
+
+        emit TokenAmountMinted(
+            _toUser,
+            _tokenSymbol,
+            _tokenName,
+            _amount,
+            _chainId,
+            block.timestamp
+        );
     }
 
-    function burn(string memory _tokenSymbol) external onlyOwner isValidSymbol(_tokenSymbol) {
-
-
+    function burn(string memory _tokenSymbol, uint256 _amount, string memory _chainId) external onlyOwner isValidSymbol(_tokenSymbol) {
+        address tokenAddress = tokens[_tokenSymbol];
+        // TODO: check account balance, if needed
+        GenericERC20Token(tokenAddress).burnFrom(address(this), _amount);
+        emit TokenAmountBurned(_tokenSymbol, _amount, _chainId, block.timestamp);
     }
 
-    function release() external onlyOwner {
-
-    }
-
-    function balanceOf(address user) external view {
-
-    }
-
-    function getUserTransferRequests(address _user) external view returns(TransferRequest[] memory) {
+    function getUserTransferRequests(address _user) external view returns (TransferRequest[] memory) {
         return userTransferRequests[_user];
     }
 
-    function getERC20Token(string memory _tokenSymbol) private view returns(address) {
+    function getERC20Token(string memory _tokenSymbol) private view returns (address) {
         return tokens[_tokenSymbol];
     }
 
