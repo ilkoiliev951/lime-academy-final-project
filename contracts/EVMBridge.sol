@@ -106,23 +106,38 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     function lock(
         address _user,
         address _tokenAddress,
+        string memory _tokenSymbol,
         uint256 _chainId,
         uint256 _amount,
         uint256 _deadline,
+        address receiver,
+        bytes32 hashedMessage,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external payable isValidAmount(_amount){
+    ) external payable isValidAmount(_amount)  {
         // transfer from user wallet to contract must happen
+        require(msg.value > 0, "We need to wrap at least 1 wei");
+        require(recoverSigner(hashedMessage, _v, _r, _s) == receiver, 'Receiver does not signed the message');
 
+        IERC20Permit(_tokenAddress).permit(
+            _user,
+            address(this),
+            _amount,
+            _deadline,
+            _v,
+            _r,
+            _s
+        );
+        IERC20(_tokenAddress).transferFrom(_user, address(this), _amount);
 
+        emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.timestamp);
     }
 
-    function release(address _user, uint256 _amount, address _tokenAddress,  string memory _tokenSymbol, string memory _chainId) external isValidAmount(_amount) isValidSymbol(_tokenSymbol){
-        // Validation here
-
-        IERC20(_tokenAddress).transferFrom(address(this), _user,_amount);
-        emit TokenAmountReleased(_user, _tokenSymbol, _tokenAddress, _amount, _chainId, block.timestamp);
+    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol, string memory _chainId) external isValidAmount(_amount) isValidSymbol(_tokenSymbol) {
+        address user = msg.sender;
+        IERC20(_tokenAddress).transferFrom(address(this), user, _amount);
+        emit TokenAmountReleased(user, _tokenSymbol, _tokenAddress, _amount, _chainId, block.timestamp);
     }
 
     function mint(
@@ -152,12 +167,12 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         );
     }
 
-    function createToken (string memory _tokenName, string memory _tokenSymbol, string memory chainId) public isValidName(_tokenName) isValidSymbol(_tokenSymbol) returns(address ) {
+    function createToken(string memory _tokenName, string memory _tokenSymbol, string memory chainId) public isValidName(_tokenName) isValidSymbol(_tokenSymbol) returns (address) {
         if (tokens[_tokenSymbol] != address(0)) {
             revert TokenAlreadyCreated();
         }
 
-        if (!(compareStrings(chainId, SEPOLIA_CHAIN_ID))  && !(compareStrings(chainId, GOERLI_CHAIN_ID))) {
+        if (!(compareStrings(chainId, SEPOLIA_CHAIN_ID)) && !(compareStrings(chainId, GOERLI_CHAIN_ID))) {
             revert InvalidChainId();
         }
 
@@ -173,21 +188,26 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         return newTokenAddress;
     }
 
-    function burn(string memory _tokenSymbol, uint256 _amount, string memory _chainId) external onlyOwner isValidSymbol(_tokenSymbol)  {
+    function burn(string memory _tokenSymbol, uint256 _amount, string memory _chainId) external onlyOwner isValidSymbol(_tokenSymbol) {
         address tokenAddress = tokens[_tokenSymbol];
         WrappedERC20Token(tokenAddress).burnFrom(address(this), _amount);
         emit TokenAmountBurned(_tokenSymbol, _amount, _chainId, block.timestamp);
     }
 
-    function getUserTransferRequests(address _user) external view returns(TransferRequest[] memory) {
+    function getUserTransferRequests(address _user) external view returns (TransferRequest[] memory) {
         return userTransferRequests[_user];
     }
 
-    function getERC20Token(string memory _tokenSymbol) private view returns(address) {
+    function getERC20Token(string memory _tokenSymbol) private view returns (address) {
         return tokens[_tokenSymbol];
     }
 
     function compareStrings(string memory val1, string memory val2) public pure returns (bool) {
         return keccak256(abi.encodePacked(val1)) == keccak256(abi.encodePacked(val2));
+    }
+
+    function recoverSigner(bytes32 hashedMessage, uint8 v, bytes32 r, bytes32 s) pure internal returns (address) {
+        bytes32 messageDigest = keccak256(abi.encodePacked("\\x19Ethereum Signed Message:\\n32", hashedMessage));
+        return ecrecover(messageDigest, v, r, s);
     }
 }
