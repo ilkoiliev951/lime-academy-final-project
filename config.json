@@ -1,6 +1,7 @@
 {
   "PROJECT_SETTINGS": {
     "isLocal": false,
-    "LIBRARY_CONTRACT_ADDRESS": ""
+    "BIRDGE_CONTRACT_SEPOLIA": "",
+    "BIRDGE_CONTRACT_GOERLI": ""
   }
 }

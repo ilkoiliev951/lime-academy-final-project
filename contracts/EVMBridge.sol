@@ -103,12 +103,26 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         _;
     }
 
-    function lock(uint256 amount, string memory _tokenSymbol) external isValidAmount(amount) isValidSymbol(_tokenSymbol){
+    function lock(
+        address _user,
+        address _tokenAddress,
+        uint256 _chainId,
+        uint256 _amount,
+        uint256 _deadline,
+        uint8 _v,
+        bytes32 _r,
+        bytes32 _s
+    ) external payable isValidAmount(_amount){
         // transfer from user wallet to contract must happen
+
+
     }
 
-    function release(uint256 amount, string memory _tokenSymbol) external isValidAmount(amount) isValidSymbol(_tokenSymbol){
-        // transfer from contract back to user wallet must happen
+    function release(address _user, uint256 _amount, address _tokenAddress,  string memory _tokenSymbol, string memory _chainId) external isValidAmount(_amount) isValidSymbol(_tokenSymbol){
+        // Validation here
+
+        IERC20(_tokenAddress).transferFrom(address(this), _user,_amount);
+        emit TokenAmountReleased(_user, _tokenSymbol, _tokenAddress, _amount, _chainId, block.timestamp);
     }
 
     function mint(
