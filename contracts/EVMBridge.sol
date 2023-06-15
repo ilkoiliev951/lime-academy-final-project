@@ -2,8 +2,8 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./GenericERC20Token.sol";
-import "./WrappedERC20Token.sol";
+import "./GenericERC20.sol";
+import "./WrappedERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 error InvalidAmount();
@@ -18,15 +18,6 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     string constant private GOERLI_CHAIN_ID = "GOERLI";
 
     mapping(string => address) public tokens;
-    mapping(address => TransferRequest[]) public userTransferRequests;
-
-    struct TransferRequest {
-        bytes32 transferRequestId;
-        address user;
-        string tokenSymbol;
-        uint256 amount;
-        uint timestamp;
-    }
 
     event TransferInitiated(
         bytes32 transferRequestId,
@@ -155,7 +146,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
             tokenAddress = createToken(_tokenName, _tokenSymbol, _chainId);
         }
 
-        WrappedERC20Token(tokenAddress).mint(_toUser, _amount);
+        WrappedERC20(tokenAddress).mint(_toUser, _amount);
 
         emit TokenAmountMinted(
             _toUser,
@@ -178,9 +169,9 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
 
         address newTokenAddress = address(0);
         if (compareStrings(chainId, SEPOLIA_CHAIN_ID)) {
-            newTokenAddress = address(new GenericERC20Token(_tokenName, _tokenSymbol));
+            newTokenAddress = address(new GenericERC20(_tokenName, _tokenSymbol));
         } else {
-            newTokenAddress = address(new WrappedERC20Token(_tokenName, _tokenSymbol));
+            newTokenAddress = address(new WrappedERC20(_tokenName, _tokenSymbol));
         }
         tokens[_tokenSymbol] = newTokenAddress;
 
@@ -190,12 +181,8 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
 
     function burn(string memory _tokenSymbol, uint256 _amount, string memory _chainId) external onlyOwner isValidSymbol(_tokenSymbol) {
         address tokenAddress = tokens[_tokenSymbol];
-        WrappedERC20Token(tokenAddress).burnFrom(address(this), _amount);
+        WrappedERC20(tokenAddress).burnFrom(address(this), _amount);
         emit TokenAmountBurned(_tokenSymbol, _amount, _chainId, block.timestamp);
-    }
-
-    function getUserTransferRequests(address _user) external view returns (TransferRequest[] memory) {
-        return userTransferRequests[_user];
     }
 
     function getERC20Token(string memory _tokenSymbol) private view returns (address) {
