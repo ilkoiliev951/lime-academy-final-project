@@ -6,12 +6,12 @@ import "./GenericERC20Token.sol";
 import "./WrappedERC20Token.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-    error InvalidAmount();
-    error InvalidTokenSymbol();
-    error InvalidTokenName();
-    error TokenAlreadyCreated();
-    error InvalidChainId();
-    error InsufficientBalance();
+error InvalidAmount();
+error InvalidTokenSymbol();
+error InvalidTokenName();
+error TokenAlreadyCreated();
+error InvalidChainId();
+error InsufficientBalance();
 
 contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     string constant private SEPOLIA_CHAIN_ID = "SEPOLIA";
