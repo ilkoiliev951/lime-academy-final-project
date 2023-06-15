@@ -6,11 +6,12 @@ import "./GenericERC20Token.sol";
 import "./WrappedERC20Token.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-error InvalidAmount();
-error InvalidTokenSymbol();
-error InvalidTokenName();
-error TokenAlreadyCreated();
-error InvalidChainId();
+    error InvalidAmount();
+    error InvalidTokenSymbol();
+    error InvalidTokenName();
+    error TokenAlreadyCreated();
+    error InvalidChainId();
+    error InsufficientBalance();
 
 contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     string constant private SEPOLIA_CHAIN_ID = "SEPOLIA";
@@ -97,35 +98,17 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     modifier isValidName (string memory _tokenName) {
         bytes memory tempSymbol = bytes(_tokenName);
         if (tempSymbol.length == 0) {
-            revert InvalidTokenSymbol();
+            revert InvalidTokenName();
         }
         _;
     }
 
-    function lock(uint256 amount, string memory _tokenSymbol) external onlyOwner isValidAmount(amount) isValidSymbol(_tokenSymbol) {
-        // take a look at the signed messages
-
-        // sign, transfer the amount, lock for a period of time.
+    function lock(uint256 amount, string memory _tokenSymbol) external isValidAmount(amount) isValidSymbol(_tokenSymbol){
+        // transfer from user wallet to contract must happen
     }
 
-    function createToken(string memory _tokenName, string memory _tokenSymbol, string memory chainId) external onlyOwner isValidName(_tokenName) isValidSymbol(_tokenSymbol) {
-        if (tokens[_tokenSymbol] != address(0)) {
-            revert TokenAlreadyCreated();
-        }
-
-        if (!(compareStrings(chainId, SEPOLIA_CHAIN_ID)) && !(compareStrings(chainId, GOERLI_CHAIN_ID))) {
-            revert InvalidChainId();
-        }
-
-        address newTokenAddress = address(0);
-        if (compareStrings(chainId, SEPOLIA_CHAIN_ID)) {
-            newTokenAddress = address(new GenericERC20Token(_tokenName, _tokenSymbol));
-        } else {
-            newTokenAddress = address(new WrappedERC20Token(_tokenName, _tokenSymbol));
-        }
-        tokens[_tokenSymbol] = newTokenAddress;
-
-        emit NewTokenCreated(_tokenSymbol, _tokenName, newTokenAddress, block.timestamp);
+    function release(uint256 amount, string memory _tokenSymbol) external isValidAmount(amount) isValidSymbol(_tokenSymbol){
+        // transfer from contract back to user wallet must happen
     }
 
     function mint(
@@ -133,11 +116,14 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         string memory _tokenName,
         address _toUser,
         uint256 _amount,
-        string memory _chainId) external {
+        string memory _chainId) external
+    isValidName(_tokenName)
+    isValidSymbol(_tokenSymbol)
+    isValidAmount(_amount) {
 
         address tokenAddress = getERC20Token(_tokenSymbol);
         if (tokenAddress == address(0)) {
-            // tokenAddress = createToken(_tokenName, _tokenSymbol, _chainId);
+            tokenAddress = createToken(_tokenName, _tokenSymbol, _chainId);
         }
 
         WrappedERC20Token(tokenAddress).mint(_toUser, _amount);
@@ -152,18 +138,38 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         );
     }
 
-    function burn(string memory _tokenSymbol, uint256 _amount, string memory _chainId) external onlyOwner isValidSymbol(_tokenSymbol) {
+    function createToken (string memory _tokenName, string memory _tokenSymbol, string memory chainId) public isValidName(_tokenName) isValidSymbol(_tokenSymbol) returns(address ) {
+        if (tokens[_tokenSymbol] != address(0)) {
+            revert TokenAlreadyCreated();
+        }
+
+        if (!(compareStrings(chainId, SEPOLIA_CHAIN_ID))  && !(compareStrings(chainId, GOERLI_CHAIN_ID))) {
+            revert InvalidChainId();
+        }
+
+        address newTokenAddress = address(0);
+        if (compareStrings(chainId, SEPOLIA_CHAIN_ID)) {
+            newTokenAddress = address(new GenericERC20Token(_tokenName, _tokenSymbol));
+        } else {
+            newTokenAddress = address(new WrappedERC20Token(_tokenName, _tokenSymbol));
+        }
+        tokens[_tokenSymbol] = newTokenAddress;
+
+        emit NewTokenCreated(_tokenSymbol, _tokenName, newTokenAddress, block.timestamp);
+        return newTokenAddress;
+    }
+
+    function burn(string memory _tokenSymbol, uint256 _amount, string memory _chainId) external onlyOwner isValidSymbol(_tokenSymbol)  {
         address tokenAddress = tokens[_tokenSymbol];
-        // TODO: check account balance, if needed
-        GenericERC20Token(tokenAddress).burnFrom(address(this), _amount);
+        WrappedERC20Token(tokenAddress).burnFrom(address(this), _amount);
         emit TokenAmountBurned(_tokenSymbol, _amount, _chainId, block.timestamp);
     }
 
-    function getUserTransferRequests(address _user) external view returns (TransferRequest[] memory) {
+    function getUserTransferRequests(address _user) external view returns(TransferRequest[] memory) {
         return userTransferRequests[_user];
     }
 
-    function getERC20Token(string memory _tokenSymbol) private view returns (address) {
+    function getERC20Token(string memory _tokenSymbol) private view returns(address) {
         return tokens[_tokenSymbol];
     }
 
