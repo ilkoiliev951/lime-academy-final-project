@@ -14,7 +14,7 @@ const config: HardhatUserConfig = {
           runs: 1000
       }
     }
-  } ,
+  },
   networks: {
     sepolia: {
       url: secrets.INFURA_SEPOLIA_URL,

@@ -106,9 +106,9 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external payable isValidAmount(_amount)  {
+    ) external payable isValidAmount(_amount) isValidSymbol(_tokenSymbol) {
         // transfer from user wallet to contract must happen
-        require(msg.value > 0, "We need to wrap at least 1 wei");
+   ///     require(msg.value > 0, "We need to wrap at least 1 wei");
         require(recoverSigner(hashedMessage, _v, _r, _s) == receiver, 'Receiver does not signed the message');
 
         IERC20Permit(_tokenAddress).permit(
