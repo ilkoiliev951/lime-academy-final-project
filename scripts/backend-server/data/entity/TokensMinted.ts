@@ -2,8 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
 import {BigNumber} from "ethers";
 
 @Entity()
-export class TransferRequest {
-
+export class TokensMinted {
     @PrimaryGeneratedColumn()
     id: number
 

@@ -2,8 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
 import {BigNumber} from "ethers";
 
 @Entity()
-export class TransferRequest {
-
+export class TokensLocked {
     @PrimaryGeneratedColumn()
     id: number
 
@@ -21,6 +20,9 @@ export class TransferRequest {
 
     @Column()
     chainId: string
+
+    @Column()
+    lockedInContract: string
 
     @Column()
     timestamp: string
