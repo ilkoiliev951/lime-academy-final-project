@@ -1,15 +1,8 @@
 import {COMMANDS, COMMAND_ELEMENT_COUNT_DICT} from "./utils/constants"
 import {MissingArgumentsException} from './exceptions/MissingArgumentsException'
 import {InvalidCommandInputException} from './exceptions/InvalidCommandInputException'
-import {
-    lock,
-    release
-} from "./interaction-service/sourceChainInteraction"
-
-import {
-    mint,
-    burn
-} from "./interaction-service/targetChainInteraction"
+import {lock, release} from "./interaction-service/sourceChainInteraction"
+import {burn, claim} from "./interaction-service/targetChainInteraction"
 import {BigNumber} from "ethers";
 
 const process = require('process');
@@ -30,29 +23,35 @@ export async function main() {
     switch (mainCommand) {
         case COMMANDS.LOCK:
             if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.LOCK)) {
-                let title = process.argv[4];
-                let author = process.argv[5];
-                let copiesCount = BigNumber.from(process.argv[6]);
-                await createANewBook(title, author, copiesCount, userPrivateKey);
+                let tokenSymbol  = process.argv[4];
+                let tokenAddress = process.argv[5];
+                let amount = BigNumber.from(process.argv[6]);
+                await lock(tokenSymbol, tokenAddress, amount, userPrivateKey)
             }
             break;
         case COMMANDS.CLAIM:
             if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.CLAIM)) {
-                let bookId = process.argv[4];
-                let additionalCopiesCount = BigNumber.from(process.argv[5]);
-                await addBookCopies(bookId, additionalCopiesCount, userPrivateKey);
+                let tokenSymbol = process.argv[4];
+                let tokenAddress = process.argv[5];
+                let amount = BigNumber.from(process.argv[6])
+                let recipientAddress = process.argv[7]
+                await claim(tokenSymbol, tokenAddress, amount, recipientAddress, userPrivateKey)
             }
             break;
         case COMMANDS.BURN:
             if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.BURN)) {
-                let bookId = process.argv[4];
-                await borrowBook(bookId, userPrivateKey);
+                let tokenSymbol = process.argv[4];
+                let tokenAddress = process.argv[5];
+                let amount =  BigNumber.from(process.argv[5]);
+                await burn(tokenSymbol,tokenAddress, amount, userPrivateKey)
             }
             break;
         case COMMANDS.RELEASE:
             if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.RELEASE)) {
-                let bookId = process.argv[4];
-                await returnBook(bookId, userPrivateKey);
+                let tokenSymbol = process.argv[4];
+                let tokenAddress = process.argv[5];
+                let amount = BigNumber.from(process.argv[6]);
+                await release(tokenAddress, tokenSymbol, amount, userPrivateKey)
             }
             break;
         default:
@@ -86,12 +85,10 @@ function isValidPrivateKey(privateKey: string): boolean {
 
 function printHelpOptions() {
     console.log('=== Available commands === \n')
-    console.log('add-new-book : Mandatory arguments: --  \n')
-    console.log('add-new-book : Mandatory arguments: --  \n')
-    console.log('borrow : Mandatory arguments: bookId \n')
-    console.log('return : Mandatory arguments: bookId \n')
-    console.log('get-all-available: Mandatory arguments: --  \n')
-    console.log('get-book-borrower-history: Mandatory arguments: --  \n')
+    console.log('lock : Mandatory arguments: --  \n')
+    console.log('claim : Mandatory arguments: --  \n')
+    console.log('burn: Mandatory arguments: bookId \n')
+    console.log('release : Mandatory arguments: bookId \n')
 }
 
 main().catch((error) => {

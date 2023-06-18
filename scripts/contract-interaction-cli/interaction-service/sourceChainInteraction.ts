@@ -17,9 +17,9 @@ export async function createToken(
 }
 
 export async function lock(
-    amount: BigNumber,
     tokenSymbol: string,
     tokenAddress: string,
+    amount: BigNumber,
     privateKey: string) {
 
     const wallet = getWallet(privateKey);

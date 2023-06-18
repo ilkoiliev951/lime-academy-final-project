@@ -17,9 +17,9 @@ export async function createToken(title: String, author: string, copiesCount: Bi
     // logTransactionOutput(addBookTx);
 }
 
-export async function mint(
-    tokenName: string,
+export async function claim(
     tokenSymbol: string,
+    tokenAddress: string,
     amount: BigNumber,
     userAddress: string,
     privateKey: string) {
@@ -31,6 +31,7 @@ export async function mint(
 
 export async function burn(
     tokenSymbol: string,
+    tokenAddress: string,
     amount: BigNumber,
     privateKey: string) {
     const wallet = getWallet(privateKey);
