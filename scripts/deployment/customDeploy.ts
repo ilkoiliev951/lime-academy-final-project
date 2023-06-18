@@ -7,7 +7,7 @@ task("deploy-custom", "Deploys a custom contract")
         const bridgeContractFactory = await ethers.getContractFactory("EVMBridge");
         const bridge = await bridgeContractFactory.deploy();
         await bridge.deployed();
-        console.log(`The Library Contract was deployed to ${bridge.address}`);
+        console.log(`The Bridge Contract was deployed to ${bridge.address}`);
 
         let subtaskArgs = {
             address: bridge.address,

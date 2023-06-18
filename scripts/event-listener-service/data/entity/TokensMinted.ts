@@ -1,7 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
 import {BigNumber} from "ethers";
 
-@Entity()
+@Entity("tokens_minted_event")
 export class TokensMinted {
     @PrimaryGeneratedColumn()
     id: number

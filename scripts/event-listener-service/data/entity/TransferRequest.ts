@@ -25,6 +25,9 @@ export class TransferRequest {
     @Column()
     targetChain: string
 
+
+    // TODO: Join with other events here
+
     @Column()
     timestamp: string
 }

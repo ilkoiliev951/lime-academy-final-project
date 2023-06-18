@@ -1,7 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
 import {BigNumber} from "ethers";
 
-@Entity()
+@Entity("tokens_burned_event")
 export class TokensBurned {
     @PrimaryGeneratedColumn()
     id: number
@@ -20,6 +20,9 @@ export class TokensBurned {
 
     @Column()
     chainId: string
+
+    @Column()
+    releasedOnSource: boolean
 
     @Column()
     timestamp: string

@@ -1,3 +1,5 @@
+import {InvalidUserAddressError} from './exceptions/InvalidUserAddress'
+
 const express = require('express');
 const dotenv = require('dotenv');
 
@@ -6,20 +8,32 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT;
 
-app.post('/api/bridge/fetch-locked', (req, res) => {
+const dataRepository = require('./data/repository/dataInteraction')
+const validator  = require('./utils/validator')
 
+app.get('/api/bridge/fetch-locked', (req, res) => {
+    let lockedEventRecords = dataRepository.fetchLockedTokenEvents();
+    res.send(lockedEventRecords)
 });
 
-app.post('/api/bridge/fetch-burnt', (req, res) => {
-    res.send('Express + TypeScript Server');
+app.get('/api/bridge/fetch-burnt', (req, res) => {
+    let burntEventRecords = dataRepository.fetchBurntTokenEvents();
+    res.send(burntEventRecords);
 });
 
 app.post('/api/bridge/fetch-bridged-by-wallet', (req, res) => {
-    res.send('Express + TypeScript Server');
+    let userAddress = req.body.address;
+    if (!validator.userAddressIsValid(req.body.address)) {
+        throw new InvalidUserAddressError('Invalid user address was given')
+    }
+
+    let userBridgedEvents = dataRepository.fetchBridgedTokensByWallet(userAddress)
+    res.send(userBridgedEvents);
 });
 
-app.post('/api/bridge/fetch-all-bridged', (req, res) => {
-    res.send('Express + TypeScript Server');
+app.get('/api/bridge/fetch-all-bridged', (req, res) => {
+    let allBridgedEvents = dataRepository.fetchAllBridgedTokenAmounts()
+    res.send(allBridgedEvents);
 });
 
 app.listen(port, () => {

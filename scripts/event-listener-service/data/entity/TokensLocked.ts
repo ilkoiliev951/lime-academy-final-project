@@ -1,7 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
 import {BigNumber} from "ethers";
 
-@Entity()
+@Entity("tokens_locked_event")
 export class TokensLocked {
     @PrimaryGeneratedColumn()
     id: number
@@ -23,6 +23,9 @@ export class TokensLocked {
 
     @Column()
     lockedInContract: string
+
+    @Column()
+    claimedOnTarget: boolean
 
     @Column()
     timestamp: string
