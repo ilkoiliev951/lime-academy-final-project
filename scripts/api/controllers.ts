@@ -7,7 +7,7 @@ const app = express();
 const port = process.env.PORT;
 
 app.post('/api/bridge/fetch-locked', (req, res) => {
-    res.send('Express + TypeScript Server');
+
 });
 
 app.post('/api/bridge/fetch-burnt', (req, res) => {

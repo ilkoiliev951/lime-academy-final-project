@@ -1,10 +1,10 @@
 import "reflect-metadata"
 import { DataSource } from "typeorm"
-import { TransferRequest } from "./entity/TransferRequest"
-import { TokensBurned } from "./entity/TokensBurned"
-import {TokensMinted } from "./entity/TokensMinted"
-import { TokensReleased } from "./entity/TokensReleased"
-import { TokensLocked } from "./entity/TokensLocked"
+import { TransferRequest } from "./data/entity/TransferRequest"
+import { TokensBurned } from "./data/entity/TokensBurned"
+import {TokensMinted } from "./data/entity/TokensMinted"
+import { TokensReleased } from "./data/entity/TokensReleased"
+import { TokensLocked } from "./data/entity/TokensLocked"
 
 export const AppDataSource = new DataSource({
     type: "postgres",

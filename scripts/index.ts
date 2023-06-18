@@ -1,6 +1,6 @@
 import { Post } from "./entity/Post"
 import { Category } from "./entity/Category"
-import { AppDataSource } from "./backend-server/data/data-source"
+import { AppDataSource } from "./api/data/data-source"
 
 AppDataSource.initialize()
     .then(async () => {

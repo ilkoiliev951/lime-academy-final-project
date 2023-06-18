@@ -1,7 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
 import {BigNumber} from "ethers";
 
-@Entity()
+@Entity("transfer_request")
 export class TransferRequest {
 
     @PrimaryGeneratedColumn()
@@ -20,7 +20,10 @@ export class TransferRequest {
     amount: BigNumber
 
     @Column()
-    chainId: string
+    sourceChain: string
+
+    @Column()
+    targetChain: string
 
     @Column()
     timestamp: string
