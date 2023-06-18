@@ -6,12 +6,12 @@ import "./GenericERC20.sol";
 import "./WrappedERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-error InvalidAmount();
-error InvalidTokenSymbol();
-error InvalidTokenName();
-error TokenAlreadyCreated();
-error InvalidChainId();
-error InsufficientBalance();
+    error InvalidAmount();
+    error InvalidTokenSymbol();
+    error InvalidTokenName();
+    error TokenAlreadyCreated();
+    error InvalidChainId();
+    error InsufficientBalance();
 
 contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     string constant private SEPOLIA_CHAIN_ID = "SEPOLIA";
@@ -101,15 +101,14 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         uint256 _chainId,
         uint256 _amount,
         uint256 _deadline,
-        address receiver,
         bytes32 hashedMessage,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external payable isValidAmount(_amount) isValidSymbol(_tokenSymbol) {
+    ) external payable isValidAmount(_amount)  {
         // transfer from user wallet to contract must happen
-   ///     require(msg.value > 0, "We need to wrap at least 1 wei");
-        require(recoverSigner(hashedMessage, _v, _r, _s) == receiver, 'Receiver does not signed the message');
+        require(msg.value > 0, "We need to wrap at least 1 wei");
+        require(recoverSigner(hashedMessage, _v, _r, _s) == _user, 'Receiver did not signed the message');
 
         IERC20Permit(_tokenAddress).permit(
             _user,
@@ -167,7 +166,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
             revert InvalidChainId();
         }
 
-        address newTokenAddress = address(0);
+        address newTokenAddress;
         if (compareStrings(chainId, SEPOLIA_CHAIN_ID)) {
             newTokenAddress = address(new GenericERC20(_tokenName, _tokenSymbol));
         } else {
