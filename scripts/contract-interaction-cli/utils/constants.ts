@@ -8,8 +8,8 @@ export const COMMANDS = {
 type CommandKey = keyof typeof COMMANDS;
 
 export const COMMAND_ELEMENT_COUNT_DICT: Record<CommandKey, number> = {
-    LOCK: 7,
-    CLAIM: 6,
-    BURN: 5,
+    LOCK: 4,
+    CLAIM: 5, // stands for mint
+    BURN: 3,
     RELEASE: 5,
 };

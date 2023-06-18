@@ -1,5 +1,5 @@
 import {BigNumber, ethers, Wallet} from 'ethers';
-const config = require('./../../../../config.json')
+const config = require('./../../../config.json')
 const bridge = require("../../../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
 import secrets from '../../../secrets.json';
 import {MissingPrivateKeyException} from "../exceptions/MissingPrivateKeyException";

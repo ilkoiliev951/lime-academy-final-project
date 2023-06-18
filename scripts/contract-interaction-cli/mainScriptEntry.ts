@@ -1,14 +1,15 @@
-import {COMMANDS, COMMAND_ELEMENT_COUNT_DICT} from "./constants"
-import {MissingArgumentsException} from '../exceptions/MissingArgumentsException'
-import {InvalidCommandInputException} from '../exceptions/InvalidCommandInputException'
+import {COMMANDS, COMMAND_ELEMENT_COUNT_DICT} from "./utils/constants"
+import {MissingArgumentsException} from './exceptions/MissingArgumentsException'
+import {InvalidCommandInputException} from './exceptions/InvalidCommandInputException'
 import {
-    createANewBook,
-    borrowBook,
-    addBookCopies,
-    getAllAvailableBooks,
-    getBookBorrowHistory,
-    returnBook
-} from "./contractInteraction"
+    lock,
+    release
+} from "./interaction-service/sourceChainInteraction"
+
+import {
+    mint,
+    burn
+} from "./interaction-service/targetChainInteraction"
 import {BigNumber} from "ethers";
 
 const process = require('process');
@@ -27,40 +28,31 @@ export async function main() {
     }
 
     switch (mainCommand) {
-        case COMMANDS.ADD_BOOK_COMMAND:
-            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.ADD_BOOK_COMMAND)) {
+        case COMMANDS.LOCK:
+            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.LOCK)) {
                 let title = process.argv[4];
                 let author = process.argv[5];
                 let copiesCount = BigNumber.from(process.argv[6]);
                 await createANewBook(title, author, copiesCount, userPrivateKey);
             }
             break;
-        case COMMANDS.ADD_COPIES_COMMAND:
-            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.ADD_COPIES_COMMAND)) {
+        case COMMANDS.CLAIM:
+            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.CLAIM)) {
                 let bookId = process.argv[4];
                 let additionalCopiesCount = BigNumber.from(process.argv[5]);
                 await addBookCopies(bookId, additionalCopiesCount, userPrivateKey);
             }
             break;
-        case COMMANDS.BORROW_BOOK_COMMAND:
-            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.BORROW_BOOK_COMMAND)) {
+        case COMMANDS.BURN:
+            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.BURN)) {
                 let bookId = process.argv[4];
                 await borrowBook(bookId, userPrivateKey);
             }
             break;
-        case COMMANDS.RETURN_BOOK_COMMAND:
-            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.RETURN_BOOK_COMMAND)) {
+        case COMMANDS.RELEASE:
+            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.RELEASE)) {
                 let bookId = process.argv[4];
                 await returnBook(bookId, userPrivateKey);
-            }
-            break;
-        case COMMANDS.GET_ALL_AVAILABLE_COMMAND:
-            await getAllAvailableBooks(userPrivateKey);
-            break;
-        case COMMANDS.GET_BOOK__HISTORY_COMMAND:
-            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.GET_BOOK__HISTORY_COMMAND)) {
-                let bookId = process.argv[4];
-                await getBookBorrowHistory(bookId, userPrivateKey);
             }
             break;
         default:
@@ -76,6 +68,7 @@ function isNullUndefined(input: any) {
 function argumentsAreMissing(requiredArgumentArrayLength: number) {
     let argumentsAreMissing = process.argv.length < requiredArgumentArrayLength;
     if (argumentsAreMissing) {
+        printHelpOptions()
         throw new MissingArgumentsException("You haven't passed all required arguments for this function");
     }
     return false;
