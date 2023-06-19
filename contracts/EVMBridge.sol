@@ -9,26 +9,10 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 error InvalidAmount();
 error InvalidTokenSymbol();
 error InvalidTokenName();
-error TokenAlreadyCreated();
 error InvalidChainId();
-error InsufficientBalance();
+error TokenDoesntExist();
 
 contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
-    string constant private SEPOLIA_CHAIN_ID = "SEPOLIA";
-    string constant private GOERLI_CHAIN_ID = "GOERLI";
-
-    mapping(string => address) public tokens;
-
-    event TransferInitiated(
-        bytes32 transferRequestId,
-        address indexed user,
-        string tokenSymbol,
-        address indexed tokenAddress,
-        uint256 amount,
-        string sourceChainId,
-        string targetChainId,
-        uint timestamp
-    );
 
     event TokenAmountLocked(
         address indexed user,
@@ -78,16 +62,8 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         _;
     }
 
-    modifier isValidSymbol (string memory _tokenSymbol) {
-        bytes memory tempSymbol = bytes(_tokenSymbol);
-        if (tempSymbol.length == 0) {
-            revert InvalidTokenSymbol();
-        }
-        _;
-    }
-
-    modifier isValidName (string memory _tokenName) {
-        bytes memory tempSymbol = bytes(_tokenName);
+    modifier isValidString (string memory _input) {
+        bytes memory tempSymbol = bytes(_input);
         if (tempSymbol.length == 0) {
             revert InvalidTokenName();
         }
@@ -124,7 +100,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.timestamp);
     }
 
-    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol, string memory _chainId) external isValidAmount(_amount) isValidSymbol(_tokenSymbol) {
+    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol, string memory _chainId) external isValidAmount(_amount) isValidString(_tokenSymbol) {
         address user = msg.sender;
         IERC20(_tokenAddress).transferFrom(address(this), user, _amount);
         emit TokenAmountReleased(user, _tokenSymbol, _tokenAddress, _amount, _chainId, block.timestamp);
@@ -133,19 +109,18 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     function mint(
         string memory _tokenSymbol,
         string memory _tokenName,
+        address _tokenAddress,
         address _toUser,
         uint256 _amount,
         string memory _chainId) external
-    isValidName(_tokenName)
-    isValidSymbol(_tokenSymbol)
+    isValidString(_tokenName)
+    isValidString(_tokenSymbol)
     isValidAmount(_amount) {
-
-        address tokenAddress = getERC20Token(_tokenSymbol);
-        if (tokenAddress == address(0)) {
-            tokenAddress = createToken(_tokenName, _tokenSymbol, _chainId);
+        if (_tokenAddress == address(0)) {
+            revert TokenDoesntExist();
         }
 
-        WrappedERC20(tokenAddress).mint(_toUser, _amount);
+        WrappedERC20(_tokenAddress).mint(_toUser, _amount);
 
         emit TokenAmountMinted(
             _toUser,
@@ -157,35 +132,58 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         );
     }
 
-    function createToken(string memory _tokenName, string memory _tokenSymbol, string memory chainId) public isValidName(_tokenName) isValidSymbol(_tokenSymbol) returns (address) {
-        if (tokens[_tokenSymbol] != address(0)) {
-            revert TokenAlreadyCreated();
-        }
-
-        if (!(compareStrings(chainId, SEPOLIA_CHAIN_ID)) && !(compareStrings(chainId, GOERLI_CHAIN_ID))) {
+    function createToken(string memory _tokenName, string memory _tokenSymbol, string memory chainId) public onlyOwner() isValidString(_tokenName) isValidString(_tokenSymbol) returns (address) {
+        address newTokenAddress;
+        if (compareStrings(chainId, "SEPOLIA")) {
+            newTokenAddress = address(new GenericERC20(_tokenName, _tokenSymbol));
+        } else if (compareStrings(chainId, "GOERLI")){
+            newTokenAddress = address(new WrappedERC20(_tokenName, _tokenSymbol));
+        } else {
             revert InvalidChainId();
         }
-
-        address newTokenAddress;
-        if (compareStrings(chainId, SEPOLIA_CHAIN_ID)) {
-            newTokenAddress = address(new GenericERC20(_tokenName, _tokenSymbol));
-        } else {
-            newTokenAddress = address(new WrappedERC20(_tokenName, _tokenSymbol));
-        }
-        tokens[_tokenSymbol] = newTokenAddress;
 
         emit NewTokenCreated(_tokenSymbol, _tokenName, newTokenAddress, block.timestamp);
         return newTokenAddress;
     }
 
-    function burn(string memory _tokenSymbol, uint256 _amount, string memory _chainId) external onlyOwner isValidSymbol(_tokenSymbol) {
-        address tokenAddress = tokens[_tokenSymbol];
-        WrappedERC20(tokenAddress).burnFrom(address(this), _amount);
+    function burnWithPermit(
+        string memory _tokenSymbol,
+        address _tokenAddress,
+        string memory _chainId,
+        address _from,
+        uint256 _amount,
+        uint256 _deadline,
+        uint8 _v,
+        bytes32 _r,
+        bytes32 _s
+    )
+    external
+    isValidString(_tokenSymbol)
+    isValidString(_chainId)
+    isValidAmount(_amount)
+    returns (bool)
+    {
+        IERC20Permit(_tokenAddress).permit(
+            _from,
+            address(this),
+            _amount,
+            _deadline,
+            _v,
+            _r,
+            _s
+        );
+
+        WrappedERC20(_tokenAddress).burnFrom(_from, _amount);
         emit TokenAmountBurned(_tokenSymbol, _amount, _chainId, block.timestamp);
+        return true;
     }
 
-    function getERC20Token(string memory _tokenSymbol) private view returns (address) {
-        return tokens[_tokenSymbol];
+    function getWERCBalanceOf(address _tokenAddress, address _userAccount) external view returns (uint256){
+        return WrappedERC20(_tokenAddress).balanceOf(_userAccount);
+    }
+
+    function getERCBalanceOf(address _tokenAddress,  address _userAccount) external view  returns (uint256){
+        return GenericERC20(_tokenAddress).balanceOf(_userAccount);
     }
 
     function compareStrings(string memory val1, string memory val2) public pure returns (bool) {

@@ -11,7 +11,7 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
           enabled: true,
-          runs: 1000
+          runs: 200
       }
     }
   },
@@ -28,6 +28,7 @@ const config: HardhatUserConfig = {
     },
     development: {
       url: "http://127.0.0.1:8545",
+      allowUnlimitedContractSize: true,
     },
   },
   etherscan: {
