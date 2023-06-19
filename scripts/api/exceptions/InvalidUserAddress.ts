@@ -1,4 +1,4 @@
-class InvalidUserAddressError extends Error {
+export class InvalidUserAddressError extends Error {
     constructor() {
         super('Invalid user address!');
     }

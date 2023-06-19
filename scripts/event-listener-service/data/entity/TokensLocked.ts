@@ -29,4 +29,7 @@ export class TokensLocked {
 
     @Column()
     timestamp: string
+
+    @Column()
+    active: boolean
 }

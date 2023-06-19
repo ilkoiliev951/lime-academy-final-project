@@ -8,7 +8,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT;
 
-const dataRepository = require('./data/repository/dataInteraction')
+const dataRepository = require('./data/repository/repository')
 const validator  = require('./utils/validator')
 
 app.get('/api/bridge/fetch-locked', (req, res) => {
@@ -24,7 +24,7 @@ app.get('/api/bridge/fetch-burnt', (req, res) => {
 app.post('/api/bridge/fetch-bridged-by-wallet', (req, res) => {
     let userAddress = req.body.address;
     if (!validator.userAddressIsValid(req.body.address)) {
-        throw new InvalidUserAddressError('Invalid user address was given')
+        throw new InvalidUserAddressError()
     }
 
     let userBridgedEvents = dataRepository.fetchBridgedTokensByWallet(userAddress)

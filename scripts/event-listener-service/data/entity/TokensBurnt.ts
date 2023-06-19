@@ -2,7 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
 import {BigNumber} from "ethers";
 
 @Entity("tokens_burned_event")
-export class TokensBurned {
+export class TokensBurnt {
     @PrimaryGeneratedColumn()
     id: number
 
