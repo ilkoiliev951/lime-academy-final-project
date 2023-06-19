@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "interact": "npx nodemon",
+    "cli-interact": "npx nodemon",
+    "bootAPI": "npx ts-node scripts/api/controllers.ts",
     "build": "hardhat compile",
     "test:light": "hardhat test",
     "test": "hardhat coverage"

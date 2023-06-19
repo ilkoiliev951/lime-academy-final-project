@@ -1,6 +1,6 @@
 export class InvalidUserAddressError extends Error {
     constructor() {
-        super('Invalid user address!');
+        super('Provided user address is invalid!');
+        this.name = 'Invalid command exception';
     }
 }
-throw new InvalidUserAddressError();
