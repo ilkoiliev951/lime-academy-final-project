@@ -82,6 +82,11 @@ describe("EVM Token Bridge", function () {
         const testUserAddress = signer[0].address
         const wrappedTokenAddress = await bridge.connect(testUserAddress).tokens('WTT');
 
+        const testGenericERCContract = await ethers.getContractAt(
+            "WrappedERC20",
+            wrappedTokenAddress
+        );
+
         const transaction = await bridge.mint(
             "WTT",
             "Wrapped Test Token",
@@ -90,7 +95,7 @@ describe("EVM Token Bridge", function () {
             ETH_IN_WEI);
 
         await transaction.wait();
-        const userBalanceAfterMint = await bridge.getWERCBalanceOf(wrappedTokenAddress, testUserAddress)
+        const userBalanceAfterMint = await testGenericERCContract.balanceOf(testUserAddress);
 
         await expect(transaction).emit(bridge, "TokenAmountMinted")
         expect(userBalanceAfterMint.toString()).to.be.equal('1000000000000000000')
@@ -399,6 +404,213 @@ describe("EVM Token Bridge", function () {
             s)).to.be.revertedWithCustomError(bridge, 'InvalidStringInput')
     });
 
+    // Release
 
+    it("Should release token amount back to user wallet", async function () {
+        // Fetch needed addresses
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[0].getAddress();
+        const genericTokenAddress = await bridge.tokens('GTT');
+        const testGenericERCContract = await ethers.getContractAt(
+            "GenericERC20",
+            genericTokenAddress
+        );
 
+        testGenericERCContract.approve(bridge.address, 100);
+
+        const releaseTx = await bridge.release(
+            100,
+            genericTokenAddress,
+            "GTT"
+            );
+        await releaseTx.wait()
+        await expect(releaseTx).to.emit(bridge, 'TokenAmountReleased')
+
+        const contractBalanceAfterRelease = await testGenericERCContract.balanceOf(bridge.address)
+        const userBalanceAfterRelease = await testGenericERCContract.balanceOf(userAddress)
+
+        expect(Number(contractBalanceAfterRelease.toString())).to.be.equal(0)
+        expect(Number(userBalanceAfterRelease.toString())).to.be.equal(0)
+    });
+
+    // Burn
+
+    it("Should burn token amount with permit", async function () {
+        // Fetch needed addresses
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[1].getAddress();
+        const wrappedTokenAddress = await bridge.tokens('WTT');
+        const testGenericERCContract = await ethers.getContractAt(
+            "WrappedERC20",
+            wrappedTokenAddress
+        );
+
+        // Mint some tokens for the user
+        const mintTx = await bridge.mint(
+            "WTT",
+            "Wrapped Test Token",
+            wrappedTokenAddress,
+            userAddress,
+            1000)
+
+        await mintTx.wait()
+
+        // Generate permit data
+        const deadline = ethers.constants.MaxUint256;
+        const spender = bridge.address;
+        const value = 100;
+
+        const [nonce, name, version] = await Promise.all([
+            testGenericERCContract.nonces(userAddress),
+            testGenericERCContract.name(),
+            "1"
+        ]);
+
+        const chainId = BigNumber.from(31337);
+
+        const { v, r, s } = await sigGenerator.generateERC20PermitSignature(
+            signers[1],
+            name,
+            version,
+            chainId,
+            wrappedTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+        const burnTx = await bridge.burnWithPermit(
+            "WTT",
+            wrappedTokenAddress,
+            userAddress,
+            value,
+            deadline,
+            v,
+            r,
+            s);
+
+        await burnTx.wait()
+        // Assert that event is emitted
+        await expect(burnTx).to.emit(bridge, 'TokenAmountBurned')
+
+        const userBalanceAfterBurn = await testGenericERCContract.balanceOf(userAddress)
+        const after = Number(userBalanceAfterBurn.toString())
+        // Assert that funds are burnt from user wallet
+        expect(after).to.be.equal(900)
+    });
+
+    it("Should revert when burning token with invalid symbol", async function () {
+        // Fetch needed addresses
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[1].getAddress();
+        const wrappedTokenAddress = await bridge.tokens('WTT');
+        const testGenericERCContract = await ethers.getContractAt(
+            "WrappedERC20",
+            wrappedTokenAddress
+        );
+
+        // Mint some tokens for the user
+        const mintTx = await bridge.mint(
+            "WTT",
+            "Wrapped Test Token",
+            wrappedTokenAddress,
+            userAddress,
+            1000)
+
+        await mintTx.wait()
+
+        // Generate permit data
+        const deadline = ethers.constants.MaxUint256;
+        const spender = bridge.address;
+        const value = 100;
+
+        const [nonce, name, version] = await Promise.all([
+            testGenericERCContract.nonces(userAddress),
+            testGenericERCContract.name(),
+            "1"
+        ]);
+
+        const chainId = BigNumber.from(31337);
+
+        const { v, r, s } = await sigGenerator.generateERC20PermitSignature(
+            signers[1],
+            name,
+            version,
+            chainId,
+            wrappedTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+        // Assert that event is emitted
+        await expect(bridge.burnWithPermit(
+            "",
+            wrappedTokenAddress,
+            userAddress,
+            value,
+            deadline,
+            v,
+            r,
+            s)).to.be.revertedWithCustomError(bridge, 'InvalidStringInput')
+    });
+
+    it("Should revert when burning token with invalid amount", async function () {
+        // Fetch needed addresses
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[1].getAddress();
+        const wrappedTokenAddress = await bridge.tokens('WTT');
+        const testGenericERCContract = await ethers.getContractAt(
+            "WrappedERC20",
+            wrappedTokenAddress
+        );
+
+        // Mint some tokens for the user
+        const mintTx = await bridge.mint(
+            "WTT",
+            "Wrapped Test Token",
+            wrappedTokenAddress,
+            userAddress,
+            1000)
+
+        await mintTx.wait()
+
+        // Generate permit data
+        const deadline = ethers.constants.MaxUint256;
+        const spender = bridge.address;
+        const value = 0;
+
+        const [nonce, name, version] = await Promise.all([
+            testGenericERCContract.nonces(userAddress),
+            testGenericERCContract.name(),
+            "1"
+        ]);
+
+        const chainId = BigNumber.from(31337);
+
+        const { v, r, s } = await sigGenerator.generateERC20PermitSignature(
+            signers[1],
+            name,
+            version,
+            chainId,
+            wrappedTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+        // Assert that event is emitted
+        await expect(bridge.burnWithPermit(
+            "WTT",
+            wrappedTokenAddress,
+            userAddress,
+            value,
+            deadline,
+            v,
+            r,
+            s)).to.be.revertedWithCustomError(bridge, 'InvalidAmount')
+    });
 });

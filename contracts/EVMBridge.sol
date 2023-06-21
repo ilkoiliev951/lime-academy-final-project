@@ -6,12 +6,12 @@ import "./GenericERC20.sol";
 import "./WrappedERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-    error InvalidAmount();
-    error InvalidTokenType();
-    error InvalidStringInput();
-    error TokenDoesntExist();
+error InvalidAmount();
+error InvalidTokenType();
+error InvalidStringInput();
+error TokenDoesntExist();
 
-contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
+contract EVMBridge is Ownable, ReentrancyGuard {
     mapping(string => address) public tokens;
 
     event TokenAmountLocked(
@@ -177,28 +177,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         return true;
     }
 
-    function getWERCBalanceOf(address _tokenAddress, address _userAccount) external view returns (uint256){
-        return WrappedERC20(_tokenAddress).balanceOf(_userAccount);
-    }
-
-    function getERCBalanceOf(address _tokenAddress,  address _userAccount) external view  returns (uint256) {
-        return GenericERC20(_tokenAddress).balanceOf(_userAccount);
-    }
-
-    function getGenericERCUserNonces(address _tokenAddress,  address _userAccount) external view  returns (uint256) {
-        return GenericERC20(_tokenAddress).nonces(_userAccount);
-    }
-
-    function getWrappedERCUserNonces(address _tokenAddress,  address _userAccount) external view  returns (uint256) {
-        return WrappedERC20(_tokenAddress).nonces(_userAccount);
-    }
-
     function compareStrings(string memory val1, string memory val2) public pure returns (bool) {
         return keccak256(abi.encodePacked(val1)) == keccak256(abi.encodePacked(val2));
-    }
-
-    function recoverSigner(bytes32 hashedMessage, uint8 v, bytes32 r, bytes32 s) pure internal returns (address) {
-        bytes32 messageDigest = keccak256(abi.encodePacked("\\x19Ethereum Signed Message:\\n32", hashedMessage));
-        return ecrecover(messageDigest, v, r, s);
     }
 }
