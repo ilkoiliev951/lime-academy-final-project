@@ -15,6 +15,9 @@ export class Token {
     @Column()
     tokenAddress: string
 
+    @Column()
+    tokenType: string
+
     // @Column()
     // initialLiquidity: BigNumber
 

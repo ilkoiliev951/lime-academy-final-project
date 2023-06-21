@@ -5,7 +5,7 @@ import { ethers } from "hardhat";
 const hre = require("hardhat")
 require("@nomicfoundation/hardhat-chai-matchers")
 
-describe("Library", function () {
+describe("EVM Token Bridge", function () {
     let bridgeFactory;
     let bridge: EVMBridge;
 

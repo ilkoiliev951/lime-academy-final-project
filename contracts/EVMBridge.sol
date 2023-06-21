@@ -6,13 +6,13 @@ import "./GenericERC20.sol";
 import "./WrappedERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-error InvalidAmount();
-error InvalidTokenSymbol();
-error InvalidTokenName();
-error InvalidChainId();
-error TokenDoesntExist();
+    error InvalidAmount();
+    error InvalidTokenType();
+    error InvalidStringInput();
+    error TokenDoesntExist();
 
 contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
+    mapping(string => address) public tokens;
 
     event TokenAmountLocked(
         address indexed user,
@@ -20,13 +20,14 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         address indexed tokenAddress,
         uint256 amount,
         address lockedInContract,
+        uint256 chainId,
         uint timestamp
     );
 
     event TokenAmountBurned(
         string tokenSymbol,
         uint256 amount,
-        string chainId,
+        uint256 chainId,
         uint timestamp
     );
 
@@ -35,7 +36,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         string tokenSymbol,
         string tokenName,
         uint256 amount,
-        string chainId,
+        uint256 chainId,
         uint timestamp
     );
 
@@ -44,7 +45,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         string tokenSymbol,
         address tokenAddress,
         uint256 amount,
-        string chainId,
+        uint256 chainId,
         uint timestamp
     );
 
@@ -52,6 +53,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         string tokenSymbol,
         string tokenName,
         address tokenAddress,
+        uint256 chainId,
         uint timestamp
     );
 
@@ -65,7 +67,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     modifier isValidString (string memory _input) {
         bytes memory tempSymbol = bytes(_input);
         if (tempSymbol.length == 0) {
-            revert InvalidTokenName();
+            revert InvalidStringInput();
         }
         _;
     }
@@ -74,17 +76,12 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         address _user,
         address _tokenAddress,
         string memory _tokenSymbol,
-        uint256 _chainId,
         uint256 _amount,
         uint256 _deadline,
-        bytes32 hashedMessage,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
     ) external payable isValidAmount(_amount)  {
-        // transfer from user wallet to contract must happen
-        require(msg.value > 0, "We need to wrap at least 1 wei");
-        require(recoverSigner(hashedMessage, _v, _r, _s) == _user, 'Receiver did not signed the message');
 
         IERC20Permit(_tokenAddress).permit(
             _user,
@@ -97,13 +94,13 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         );
         IERC20(_tokenAddress).transferFrom(_user, address(this), _amount);
 
-        emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.timestamp);
+        emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.chainid, block.timestamp);
     }
 
-    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol, string memory _chainId) external isValidAmount(_amount) isValidString(_tokenSymbol) {
+    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external isValidAmount(_amount) isValidString(_tokenSymbol) {
         address user = msg.sender;
         IERC20(_tokenAddress).transferFrom(address(this), user, _amount);
-        emit TokenAmountReleased(user, _tokenSymbol, _tokenAddress, _amount, _chainId, block.timestamp);
+        emit TokenAmountReleased(user, _tokenSymbol, _tokenAddress, _amount, block.chainid, block.timestamp);
     }
 
     function mint(
@@ -111,12 +108,11 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         string memory _tokenName,
         address _tokenAddress,
         address _toUser,
-        uint256 _amount,
-        string memory _chainId) external
+        uint256 _amount) external
     isValidString(_tokenName)
     isValidString(_tokenSymbol)
     isValidAmount(_amount) {
-        if (_tokenAddress == address(0)) {
+        if (tokens[_tokenSymbol] == address(0)) {
             revert TokenDoesntExist();
         }
 
@@ -127,29 +123,32 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
             _tokenSymbol,
             _tokenName,
             _amount,
-            _chainId,
+            block.chainid,
             block.timestamp
         );
     }
 
-    function createToken(string memory _tokenName, string memory _tokenSymbol, string memory chainId) public onlyOwner() isValidString(_tokenName) isValidString(_tokenSymbol) returns (address) {
+    function createToken(string memory _tokenName, string memory _tokenSymbol, string memory _tokenType) public onlyOwner() isValidString(_tokenName) isValidString(_tokenSymbol) returns (address) {
+        require(tokens[_tokenSymbol] == address(0), "Token with the same symbol has already been created on the bridge!");
+
         address newTokenAddress;
-        if (compareStrings(chainId, "SEPOLIA")) {
+        if (compareStrings(_tokenType, "generic")) {
             newTokenAddress = address(new GenericERC20(_tokenName, _tokenSymbol));
-        } else if (compareStrings(chainId, "GOERLI")){
+        } else if (compareStrings(_tokenType, "wrapped")) {
             newTokenAddress = address(new WrappedERC20(_tokenName, _tokenSymbol));
         } else {
-            revert InvalidChainId();
+            revert InvalidTokenType();
         }
 
-        emit NewTokenCreated(_tokenSymbol, _tokenName, newTokenAddress, block.timestamp);
+        tokens[_tokenSymbol] = newTokenAddress;
+
+        emit NewTokenCreated(_tokenSymbol, _tokenName, newTokenAddress, block.chainid, block.timestamp);
         return newTokenAddress;
     }
 
     function burnWithPermit(
         string memory _tokenSymbol,
         address _tokenAddress,
-        string memory _chainId,
         address _from,
         uint256 _amount,
         uint256 _deadline,
@@ -159,10 +158,10 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
     )
     external
     isValidString(_tokenSymbol)
-    isValidString(_chainId)
     isValidAmount(_amount)
     returns (bool)
     {
+
         IERC20Permit(_tokenAddress).permit(
             _from,
             address(this),
@@ -174,7 +173,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         );
 
         WrappedERC20(_tokenAddress).burnFrom(_from, _amount);
-        emit TokenAmountBurned(_tokenSymbol, _amount, _chainId, block.timestamp);
+        emit TokenAmountBurned(_tokenSymbol, _amount, block.chainid, block.timestamp);
         return true;
     }
 
@@ -182,8 +181,16 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         return WrappedERC20(_tokenAddress).balanceOf(_userAccount);
     }
 
-    function getERCBalanceOf(address _tokenAddress,  address _userAccount) external view  returns (uint256){
+    function getERCBalanceOf(address _tokenAddress,  address _userAccount) external view  returns (uint256) {
         return GenericERC20(_tokenAddress).balanceOf(_userAccount);
+    }
+
+    function getGenericERCUserNonces(address _tokenAddress,  address _userAccount) external view  returns (uint256) {
+        return GenericERC20(_tokenAddress).nonces(_userAccount);
+    }
+
+    function getWrappedERCUserNonces(address _tokenAddress,  address _userAccount) external view  returns (uint256) {
+        return WrappedERC20(_tokenAddress).nonces(_userAccount);
     }
 
     function compareStrings(string memory val1, string memory val2) public pure returns (bool) {
