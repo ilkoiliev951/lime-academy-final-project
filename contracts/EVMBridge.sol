@@ -81,7 +81,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external payable isValidAmount(_amount)  {
+    ) external payable isValidAmount(_amount) isValidString(_tokenSymbol) {
 
         IERC20Permit(_tokenAddress).permit(
             _user,

@@ -29,6 +29,7 @@ const config: HardhatUserConfig = {
     development: {
       url: "http://127.0.0.1:8545",
       allowUnlimitedContractSize: true,
+      chainId: 13337
     },
   },
   etherscan: {

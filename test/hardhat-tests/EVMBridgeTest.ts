@@ -6,6 +6,7 @@ import {BigNumberish} from "@ethersproject/bignumber";
 import {BytesLike} from "@ethersproject/bytes";
 
 const hre = require("hardhat")
+const sigGenerator = require("./../../scripts/utils/permitSignatureGenerator")
 const HARDHAT_TEST_WALLET_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 const ETH_IN_WEI: BigNumber = BigNumber.from('1000000000000000000');
 
@@ -15,23 +16,13 @@ describe("EVM Token Bridge", function () {
     let bridgeFactory;
     let bridge: EVMBridge;
 
-    let genericERCFactory;
-    let genericERC;
-
-    let wrappedERCFactory;
-    let wrappedERC;
-
     before(async function () {
         await hre.network.provider.send("hardhat_reset")
         bridgeFactory = await ethers.getContractFactory("EVMBridge");
-        genericERCFactory = await ethers.getContractFactory("GenericERC20");
-        wrappedERCFactory = await ethers.getContractFactory("WrappedERC20");
 
         // @ts-ignore
         // Deploy
         bridge = await bridgeFactory.deploy();
-        genericERC = genericERCFactory.deploy();
-        wrappedERC = wrappedERCFactory.deploy();
 
         // Await
         await bridge.deployed();
@@ -163,6 +154,7 @@ describe("EVM Token Bridge", function () {
     });
 
     // Lock
+
     it("Should lock token amount in bridge contract with permit", async function () {
         // Fetch needed addresses
         const signers = await ethers.getSigners();
@@ -179,8 +171,10 @@ describe("EVM Token Bridge", function () {
             "Generic Test Token",
             genericTokenAddress,
             userAddress,
-        20000)
+            20000)
         await mintTx.wait()
+
+        const userBalanceBeforeLock = await testGenericERCContract.balanceOf(userAddress)
 
         // Generate permit data
         const deadline = ethers.constants.MaxUint256;
@@ -193,57 +187,48 @@ describe("EVM Token Bridge", function () {
             "1"
         ]);
 
-        const chainId = BigNumber.from(hre.network.config.chainId);
+        const chainId = BigNumber.from(31337);
 
-        const { v, r, s } = ethers.utils.splitSignature(
-            await signers[0]._signTypedData(
-                {
-                    name: name,
-                    version: version,
-                    chainId: chainId,
-                    verifyingContract: genericTokenAddress,
-                } as TypedDataDomain,
-                {
-                    Permit: [
-                        {
-                            name: "owner",
-                            type: "address",
-                        },
-                        {
-                            name: "spender",
-                            type: "address",
-                        },
-                        {
-                            name: "value",
-                            type: "uint256",
-                        },
-                        {
-                            name: "nonce",
-                            type: "uint256",
-                        },
-                        {
-                            name: "deadline",
-                            type: "uint256",
-                        },
-                    ],
-                },
-                {
-                    owner: userAddress,
-                    spender,
-                    value,
-                    nonce,
-                    deadline,
-                }
-            )
-        );
+        const { v, r, s } = await sigGenerator.generateERC20PermitSignature(
+            signers[0],
+            name,
+            version,
+            chainId,
+            genericTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+        const lockTx = await bridge.lock(
+            userAddress,
+            genericTokenAddress,
+            "GTT",
+            value,
+            deadline,
+            v,
+            r,
+            s);
 
-        console.log('Signed')
+        await lockTx.wait()
 
-        //
+        // Assert that event is emitted
+        await expect(lockTx).to.emit(bridge, 'TokenAmountLocked')
+
+        const contractBalanceAfterLock = await testGenericERCContract.balanceOf(bridge.address)
+        const userBalanceAfterLock = await testGenericERCContract.balanceOf(userAddress)
+
+        const after = Number(userBalanceAfterLock.toString())
+        const before = Number(userBalanceBeforeLock.toString())
+
+        // Assert that funds are received by the contract
+        expect(Number(contractBalanceAfterLock.toString())).to.be.equal(100)
+        // Assert that funds are sent from user wallet
+        expect(before - after).to.be.equal(100)
     });
 
-    // Lock
-    it("Should lock token amount in bridge contract with permit", async function () {
+    it("Should revert when trying to lock more than signed amount", async function () {
         // Fetch needed addresses
         const signers = await ethers.getSigners();
         const userAddress = await signers[0].getAddress();
@@ -273,52 +258,147 @@ describe("EVM Token Bridge", function () {
             "1"
         ]);
 
-        const chainId = BigNumber.from(hre.network.config.chainId);
+        const chainId = BigNumber.from(31337);
 
-        const { v, r, s } = ethers.utils.splitSignature(
-            await signers[0]._signTypedData(
-                {
-                    name: name,
-                    version: version,
-                    chainId: chainId,
-                    verifyingContract: genericTokenAddress,
-                } as TypedDataDomain,
-                {
-                    Permit: [
-                        {
-                            name: "owner",
-                            type: "address",
-                        },
-                        {
-                            name: "spender",
-                            type: "address",
-                        },
-                        {
-                            name: "value",
-                            type: "uint256",
-                        },
-                        {
-                            name: "nonce",
-                            type: "uint256",
-                        },
-                        {
-                            name: "deadline",
-                            type: "uint256",
-                        },
-                    ],
-                },
-                {
-                    owner: userAddress,
-                    spender,
-                    value,
-                    nonce,
-                    deadline,
-                }
-            )
+        const {v,r,s}= await sigGenerator.generateERC20PermitSignature(
+            signers[0],
+            name,
+            version,
+            chainId,
+            genericTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+
+        await expect(bridge.lock(
+            userAddress,
+            genericTokenAddress,
+            "GTT",
+            10000,
+            deadline,
+            v,
+            r,
+            s)).to.be.revertedWith('ERC20Permit: invalid signature')
+    });
+
+    it("Should revert when trying to lock an invalid amount", async function () {
+        // Fetch needed addresses
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[0].getAddress();
+        const genericTokenAddress = await bridge.tokens('GTT');
+        const testGenericERCContract = await ethers.getContractAt(
+            "GenericERC20",
+            genericTokenAddress
         );
 
-        console.log('Signed')
+        // Mint some tokens for the user
+        const mintTx = await bridge.mint(
+            "GTT",
+            "Generic Test Token",
+            genericTokenAddress,
+            userAddress,
+            20000)
+        await mintTx.wait()
 
-        //
+
+
+        // Generate permit data
+        const deadline = ethers.constants.MaxUint256;
+        const spender = bridge.address;
+        const value = 0;
+
+        const [nonce, name, version] = await Promise.all([
+            testGenericERCContract.nonces(userAddress),
+            testGenericERCContract.name(),
+            "1"
+        ]);
+
+        const chainId = BigNumber.from(31337);
+
+        const {v,r,s}= await sigGenerator.generateERC20PermitSignature(
+            signers[0],
+            name,
+            version,
+            chainId,
+            genericTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+
+        await expect(bridge.lock(
+            userAddress,
+            genericTokenAddress,
+            "GTT",
+            0,
+            deadline,
+            v,
+            r,
+            s)).to.be.revertedWithCustomError(bridge, 'InvalidAmount')
+
     });
+
+    it("Should revert when trying to lock token with invalid symbol", async function () {
+        // Fetch needed addresses
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[0].getAddress();
+        const genericTokenAddress = await bridge.tokens('GTT');
+        const testGenericERCContract = await ethers.getContractAt(
+            "GenericERC20",
+            genericTokenAddress
+        );
+
+        // Mint some tokens for the user
+        const mintTx = await bridge.mint(
+            "GTT",
+            "Generic Test Token",
+            genericTokenAddress,
+            userAddress,
+            20000)
+        await mintTx.wait()
+
+        // Generate permit data
+        const deadline = ethers.constants.MaxUint256;
+        const spender = bridge.address;
+        const value = 100;
+
+        const [nonce, name, version] = await Promise.all([
+            testGenericERCContract.nonces(userAddress),
+            testGenericERCContract.name(),
+            "1"
+        ]);
+
+        const chainId = BigNumber.from(31337);
+
+        const {v,r,s}= await sigGenerator.generateERC20PermitSignature(
+            signers[0],
+            name,
+            version,
+            chainId,
+            genericTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+
+        await expect(bridge.lock(
+            userAddress,
+            genericTokenAddress,
+            "",
+            100,
+            deadline,
+            v,
+            r,
+            s)).to.be.revertedWithCustomError(bridge, 'InvalidStringInput')
+    });
+
+
+
 });
