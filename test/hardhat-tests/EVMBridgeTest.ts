@@ -2,12 +2,9 @@ import { EVMBridge } from "./../../typechain-types/contracts/EVMBridge";
 import { expect,} from "chai";
 import { ethers } from "hardhat";
 import {BigNumber, TypedDataDomain} from "ethers";
-import {BigNumberish} from "@ethersproject/bignumber";
-import {BytesLike} from "@ethersproject/bytes";
 
 const hre = require("hardhat")
 const sigGenerator = require("./../../scripts/utils/permitSignatureGenerator")
-const HARDHAT_TEST_WALLET_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 const ETH_IN_WEI: BigNumber = BigNumber.from('1000000000000000000');
 
 require("@nomicfoundation/hardhat-chai-matchers")
