@@ -6,29 +6,13 @@ import "./GenericERC20.sol";
 import "./WrappedERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-    error InvalidAmount();
-    error InvalidTokenSymbol();
-    error InvalidTokenName();
-    error TokenAlreadyCreated();
-    error InvalidChainId();
-    error InsufficientBalance();
+error InvalidAmount();
+error InvalidTokenType();
+error InvalidStringInput();
+error TokenDoesntExist();
 
-contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
-    string constant private SEPOLIA_CHAIN_ID = "SEPOLIA";
-    string constant private GOERLI_CHAIN_ID = "GOERLI";
-
+contract EVMBridge is Ownable, ReentrancyGuard {
     mapping(string => address) public tokens;
-
-    event TransferInitiated(
-        bytes32 transferRequestId,
-        address indexed user,
-        string tokenSymbol,
-        address indexed tokenAddress,
-        uint256 amount,
-        string sourceChainId,
-        string targetChainId,
-        uint timestamp
-    );
 
     event TokenAmountLocked(
         address indexed user,
@@ -36,13 +20,14 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         address indexed tokenAddress,
         uint256 amount,
         address lockedInContract,
+        uint256 chainId,
         uint timestamp
     );
 
     event TokenAmountBurned(
         string tokenSymbol,
         uint256 amount,
-        string chainId,
+        uint256 chainId,
         uint timestamp
     );
 
@@ -51,7 +36,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         string tokenSymbol,
         string tokenName,
         uint256 amount,
-        string chainId,
+        uint256 chainId,
         uint timestamp
     );
 
@@ -60,7 +45,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         string tokenSymbol,
         address tokenAddress,
         uint256 amount,
-        string chainId,
+        uint256 chainId,
         uint timestamp
     );
 
@@ -68,6 +53,7 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         string tokenSymbol,
         string tokenName,
         address tokenAddress,
+        uint256 chainId,
         uint timestamp
     );
 
@@ -78,18 +64,10 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         _;
     }
 
-    modifier isValidSymbol (string memory _tokenSymbol) {
-        bytes memory tempSymbol = bytes(_tokenSymbol);
+    modifier isValidString (string memory _input) {
+        bytes memory tempSymbol = bytes(_input);
         if (tempSymbol.length == 0) {
-            revert InvalidTokenSymbol();
-        }
-        _;
-    }
-
-    modifier isValidName (string memory _tokenName) {
-        bytes memory tempSymbol = bytes(_tokenName);
-        if (tempSymbol.length == 0) {
-            revert InvalidTokenName();
+            revert InvalidStringInput();
         }
         _;
     }
@@ -98,17 +76,12 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         address _user,
         address _tokenAddress,
         string memory _tokenSymbol,
-        uint256 _chainId,
         uint256 _amount,
         uint256 _deadline,
-        bytes32 hashedMessage,
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external payable isValidAmount(_amount)  {
-        // transfer from user wallet to contract must happen
-        require(msg.value > 0, "We need to wrap at least 1 wei");
-        require(recoverSigner(hashedMessage, _v, _r, _s) == _user, 'Receiver did not signed the message');
+    ) external payable isValidAmount(_amount) isValidString(_tokenSymbol) {
 
         IERC20Permit(_tokenAddress).permit(
             _user,
@@ -121,79 +94,90 @@ contract EVMBridge is AccessControl, Ownable, ReentrancyGuard {
         );
         IERC20(_tokenAddress).transferFrom(_user, address(this), _amount);
 
-        emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.timestamp);
+        emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.chainid, block.timestamp);
     }
 
-    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol, string memory _chainId) external isValidAmount(_amount) isValidSymbol(_tokenSymbol) {
+    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external isValidAmount(_amount) isValidString(_tokenSymbol) {
         address user = msg.sender;
         IERC20(_tokenAddress).transferFrom(address(this), user, _amount);
-        emit TokenAmountReleased(user, _tokenSymbol, _tokenAddress, _amount, _chainId, block.timestamp);
+        emit TokenAmountReleased(user, _tokenSymbol, _tokenAddress, _amount, block.chainid, block.timestamp);
     }
 
     function mint(
         string memory _tokenSymbol,
         string memory _tokenName,
+        address _tokenAddress,
         address _toUser,
-        uint256 _amount,
-        string memory _chainId) external
-    isValidName(_tokenName)
-    isValidSymbol(_tokenSymbol)
+        uint256 _amount) external
+    isValidString(_tokenName)
+    isValidString(_tokenSymbol)
     isValidAmount(_amount) {
-
-        address tokenAddress = getERC20Token(_tokenSymbol);
-        if (tokenAddress == address(0)) {
-            tokenAddress = createToken(_tokenName, _tokenSymbol, _chainId);
+        if (tokens[_tokenSymbol] == address(0)) {
+            revert TokenDoesntExist();
         }
 
-        WrappedERC20(tokenAddress).mint(_toUser, _amount);
+        WrappedERC20(_tokenAddress).mint(_toUser, _amount);
 
         emit TokenAmountMinted(
             _toUser,
             _tokenSymbol,
             _tokenName,
             _amount,
-            _chainId,
+            block.chainid,
             block.timestamp
         );
     }
 
-    function createToken(string memory _tokenName, string memory _tokenSymbol, string memory chainId) public isValidName(_tokenName) isValidSymbol(_tokenSymbol) returns (address) {
-        if (tokens[_tokenSymbol] != address(0)) {
-            revert TokenAlreadyCreated();
-        }
-
-        if (!(compareStrings(chainId, SEPOLIA_CHAIN_ID)) && !(compareStrings(chainId, GOERLI_CHAIN_ID))) {
-            revert InvalidChainId();
-        }
+    function createToken(string memory _tokenName, string memory _tokenSymbol, string memory _tokenType) public onlyOwner() isValidString(_tokenName) isValidString(_tokenSymbol) returns (address) {
+        require(tokens[_tokenSymbol] == address(0), "Token with the same symbol has already been created on the bridge!");
 
         address newTokenAddress;
-        if (compareStrings(chainId, SEPOLIA_CHAIN_ID)) {
+        if (compareStrings(_tokenType, "generic")) {
             newTokenAddress = address(new GenericERC20(_tokenName, _tokenSymbol));
-        } else {
+        } else if (compareStrings(_tokenType, "wrapped")) {
             newTokenAddress = address(new WrappedERC20(_tokenName, _tokenSymbol));
+        } else {
+            revert InvalidTokenType();
         }
+
         tokens[_tokenSymbol] = newTokenAddress;
 
-        emit NewTokenCreated(_tokenSymbol, _tokenName, newTokenAddress, block.timestamp);
+        emit NewTokenCreated(_tokenSymbol, _tokenName, newTokenAddress, block.chainid, block.timestamp);
         return newTokenAddress;
     }
 
-    function burn(string memory _tokenSymbol, uint256 _amount, string memory _chainId) external onlyOwner isValidSymbol(_tokenSymbol) {
-        address tokenAddress = tokens[_tokenSymbol];
-        WrappedERC20(tokenAddress).burnFrom(address(this), _amount);
-        emit TokenAmountBurned(_tokenSymbol, _amount, _chainId, block.timestamp);
-    }
+    function burnWithPermit(
+        string memory _tokenSymbol,
+        address _tokenAddress,
+        address _from,
+        uint256 _amount,
+        uint256 _deadline,
+        uint8 _v,
+        bytes32 _r,
+        bytes32 _s
+    )
+    external
+    isValidString(_tokenSymbol)
+    isValidAmount(_amount)
+    returns (bool)
+    {
 
-    function getERC20Token(string memory _tokenSymbol) private view returns (address) {
-        return tokens[_tokenSymbol];
+        IERC20Permit(_tokenAddress).permit(
+            _from,
+            address(this),
+            _amount,
+            _deadline,
+            _v,
+            _r,
+            _s
+        );
+
+        WrappedERC20(_tokenAddress).burnFrom(_from, _amount);
+        emit TokenAmountBurned(_tokenSymbol, _amount, block.chainid, block.timestamp);
+        return true;
     }
 
     function compareStrings(string memory val1, string memory val2) public pure returns (bool) {
         return keccak256(abi.encodePacked(val1)) == keccak256(abi.encodePacked(val2));
-    }
-
-    function recoverSigner(bytes32 hashedMessage, uint8 v, bytes32 r, bytes32 s) pure internal returns (address) {
-        bytes32 messageDigest = keccak256(abi.encodePacked("\\x19Ethereum Signed Message:\\n32", hashedMessage));
-        return ecrecover(messageDigest, v, r, s);
     }
 }
