@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -101,7 +102,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
 
     function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external nonReentrant() isValidAmount(_amount) isValidString(_tokenSymbol) {
         address user = msg.sender;
-        IERC20(_tokenAddress).transferFrom(address(this), user, _amount);
+        IERC20(_tokenAddress).transfer(user, _amount);
         emit TokenAmountReleased(user, _tokenSymbol, _tokenAddress, _amount, block.chainid, block.timestamp);
     }
 
