@@ -14,6 +14,8 @@ error TokenDoesntExist();
 contract EVMBridge is Ownable, ReentrancyGuard {
     mapping(string => address) public tokens;
 
+    constructor() ReentrancyGuard() {}
+
     event TokenAmountLocked(
         address indexed user,
         string tokenSymbol,
@@ -81,7 +83,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external payable isValidAmount(_amount) isValidString(_tokenSymbol) {
+    ) external payable nonReentrant() isValidAmount(_amount) isValidString(_tokenSymbol) {
 
         IERC20Permit(_tokenAddress).permit(
             _user,
@@ -97,7 +99,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.chainid, block.timestamp);
     }
 
-    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external isValidAmount(_amount) isValidString(_tokenSymbol) {
+    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external nonReentrant() isValidAmount(_amount) isValidString(_tokenSymbol) {
         address user = msg.sender;
         IERC20(_tokenAddress).transferFrom(address(this), user, _amount);
         emit TokenAmountReleased(user, _tokenSymbol, _tokenAddress, _amount, block.chainid, block.timestamp);
@@ -109,6 +111,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         address _tokenAddress,
         address _toUser,
         uint256 _amount) external
+    nonReentrant()
     isValidString(_tokenName)
     isValidString(_tokenSymbol)
     isValidAmount(_amount) {
@@ -157,6 +160,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         bytes32 _s
     )
     external
+    nonReentrant()
     isValidString(_tokenSymbol)
     isValidAmount(_amount)
     returns (bool)
