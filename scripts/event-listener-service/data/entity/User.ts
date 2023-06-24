@@ -1,6 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
+import { OneToMany, Column, Entity, PrimaryGeneratedColumn } from "typeorm"
+import {TokenBalance} from "./TokenBalance";
 
-@Entity()
+@Entity('user')
 export class User {
     @PrimaryGeneratedColumn()
     id: number
@@ -13,4 +14,7 @@ export class User {
 
     @Column()
     userAddress: string
+
+    @OneToMany(() => TokenBalance, balance => balance.user)
+    balances: TokenBalance[];
 }
