@@ -1,5 +1,5 @@
 import {ethers} from "hardhat";
-import {BigNumber, TypedDataDomain} from "ethers";
+import {TypedDataDomain} from "ethers";
 
 export async function generateERC20PermitSignature (
     signer,

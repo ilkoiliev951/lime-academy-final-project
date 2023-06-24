@@ -1,8 +1,8 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
 import {BigNumber} from "ethers";
 
-@Entity("token")
-export class Token {
+@Entity("user")
+export class User {
     @PrimaryGeneratedColumn()
     id: number
 
@@ -10,14 +10,8 @@ export class Token {
     tokenSymbol: string
 
     @Column()
-    tokenName: string
-
-    @Column()
     tokenAddress: string
 
     @Column()
-    tokenType: string
-
-    @Column()
-    chainId: string
+    userAddress: string
 }

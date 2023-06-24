@@ -1,7 +1,8 @@
 {
   "PROJECT_SETTINGS": {
-    "isLocal": false,
-    "BIRDGE_CONTRACT_SEPOLIA": "",
-    "BIRDGE_CONTRACT_GOERLI": ""
+    "isSourceLocal": true,
+    "isTargetLocal": false,
+    "BRIDGE_CONTRACT_SOURCE": "",
+    "BRIDGE_CONTRACT_TARGET": ""
   }
 }

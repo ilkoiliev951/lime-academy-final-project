@@ -1,14 +1,24 @@
-
 const repository = require('./../data/repository')
 
-export async function validateLock () {
+// on mint
+export async function validateLockOnSource () {
 
 }
 
+// on release
 export async function validateBurn () {
 
 }
 
-export async function validateRelease() {
+// on burn
+export async function validateMint() {
 
+}
+
+export async function validateNewToken() {
+    const res = repository.fetchAllTokens();
+    // filter for the token symbol
+    res.then(
+
+    )
 }

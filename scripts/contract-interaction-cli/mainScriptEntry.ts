@@ -1,8 +1,8 @@
 import {COMMANDS, COMMAND_ELEMENT_COUNT_DICT} from "./utils/constants"
-import {MissingArgumentsException} from './exceptions/MissingArgumentsException'
-import {InvalidCommandInputException} from './exceptions/InvalidCommandInputException'
-import {lock, release} from "./interaction-service/sourceChainInteraction"
-import {burn, claim} from "./interaction-service/targetChainInteraction"
+import {MissingArgumentsException} from './../utils/exceptions/MissingArgumentsException'
+import {InvalidCommandInputException} from './../utils/exceptions/InvalidCommandInputException'
+import {lockWithPermit, release} from "./interaction-service/sourceChainInteraction"
+import {burnWithPermit, mint} from "./interaction-service/targetChainInteraction"
 import {BigNumber} from "ethers";
 
 const process = require('process');
@@ -26,7 +26,7 @@ export async function main() {
                 let tokenSymbol  = process.argv[4];
                 let tokenAddress = process.argv[5];
                 let amount = BigNumber.from(process.argv[6]);
-                await lock(tokenSymbol, tokenAddress, amount, userPrivateKey)
+                await lockWithPermit(tokenSymbol, tokenAddress, amount, userPrivateKey)
             }
             break;
         case COMMANDS.CLAIM:
@@ -34,8 +34,7 @@ export async function main() {
                 let tokenSymbol = process.argv[4];
                 let tokenAddress = process.argv[5];
                 let amount = BigNumber.from(process.argv[6])
-                let recipientAddress = process.argv[7]
-                await claim(tokenSymbol, tokenAddress, amount, recipientAddress, userPrivateKey)
+                await mint(tokenSymbol, tokenAddress, amount,  userPrivateKey)
             }
             break;
         case COMMANDS.BURN:
@@ -43,7 +42,7 @@ export async function main() {
                 let tokenSymbol = process.argv[4];
                 let tokenAddress = process.argv[5];
                 let amount =  BigNumber.from(process.argv[5]);
-                await burn(tokenSymbol,tokenAddress, amount, userPrivateKey)
+                await burnWithPermit(tokenSymbol,tokenAddress, amount, userPrivateKey)
             }
             break;
         case COMMANDS.RELEASE:
