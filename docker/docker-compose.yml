@@ -7,11 +7,13 @@ services:
     environment:
       - POSTGRES_USER=developer
       - POSTGRES_PASSWORD=developer
-      - POSTGRES_DB=bridge-db
+      - POSTGRES_DB=bridge
     ports:
-      - '5434:5434'
+      - '5432:5432'
     volumes:
       - db:/var/lib/postgresql/data
 volumes:
   db:
     driver: local
+
+#docker exec -it <container-name> psql -U <DB_USER> -d <DB_NAME> -f /file.sql

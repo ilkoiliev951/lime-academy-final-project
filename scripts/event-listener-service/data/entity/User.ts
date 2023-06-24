@@ -1,7 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
-import {BigNumber} from "ethers";
 
-@Entity("user")
+@Entity()
 export class User {
     @PrimaryGeneratedColumn()
     id: number
