@@ -3,6 +3,9 @@ import secrets from "../../../secrets.json";
 import {HARDHAT_URL, SOURCE_NETWORK_TYPE, TARGET_NETWORK_TYPE} from "../constants";
 import {Token} from "./entity/Token";
 import {TokensMinted} from "./entity/TokensMinted";
+import {TokensBurnt} from "./entity/TokensBurnt";
+import {TokensLocked} from "./entity/TokensLocked";
+import {TokensReleased} from "./entity/TokensReleased";
 
 const {ethers} = require('ethers');
 const config = require('./../../../config.json')
@@ -26,38 +29,40 @@ const main = async () => {
 async function registerTargetNetworkEventListeners() {
     contractSource.on('NewTokenCreated', (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
-        const token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString())
+        const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString())
         repository.saveNewTokenEvent(token)
     });
 
-    contractSource.on('TokenAmountMinted', (user, tokenSymbol, tokenName, amount, chainId, timestamp) => {
+    contractSource.on('TokenAmountMinted', (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
         console.log('Intercepted TokenAmountMinted event')
-        // this.tokenSymbol = tokenSymbol;
-        // this.tokenAddress = tokenAddress;
-        // this.userAddress = userAddress;
-        // this.amount = amount;
-        // this.chainId = chainId;
-        // this.timestamp = timestamp;
-        const token = new TokensMinted(tokenSymbol, )
-        repository.saveNewTokenEvent(token)
+        const mintEvent: TokensMinted = new TokensMinted(tokenSymbol, tokenAddress, user, amount, chainId, timestamp);
+        repository.saveMintEvent(mintEvent);
     });
 
-    contractSource.on('TokenAmountBurned', (user, tokenSymbol, amount, chainId, timestamp) => {
+    contractSource.on('TokenAmountBurned', (user, tokenAddress, tokenSymbol, amount, chainId, timestamp) => {
         console.log('Intercepted TokenAmountBurned event')
+        const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount, chainId, false, timestamp);
+        repository.saveBurntEvent(burntEvent);
     });
 }
 
 async function registerSourceNetworkEventListeners() {
     contractTarget.on('NewTokenCreated', (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
+        const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'generic', chainId.toString())
+        repository.saveNewTokenEvent(token)
     });
 
     contractTarget.on('TokenAmountLocked', (user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
         console.log('Intercepted TokenAmountLocked event')
+        const lockEvent: TokensLocked = new TokensLocked(tokenSymbol, tokenAddress, user, amount, chainId.toString(), lockedInContract, false, timestamp, true);
+        repository.saveLockedEvent(lockEvent);
     });
 
-    contractTarget.on('TokenAmountReleased', (event) => {
+    contractTarget.on('TokenAmountReleased', (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
         console.log('Intercepted TokenAmountReleased event')
+        const releaseEvent: TokensReleased = new TokensReleased(tokenSymbol, tokenAddress, user, amount, chainId.toString(), timestamp)
+        repository.saveReleaseEvent(releaseEvent);
     });
 }
 

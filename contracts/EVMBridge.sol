@@ -39,7 +39,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     event TokenAmountBurned(
         address indexed user,
         string tokenSymbol,
-        address tokenAddress,
+        address indexed tokenAddress,
         uint256 amount,
         uint256 chainId,
         uint timestamp
@@ -48,7 +48,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     event TokenAmountMinted(
         address indexed user,
         string tokenSymbol,
-        string tokenAddress,
+        address indexed tokenAddress,
         uint256 amount,
         uint256 chainId,
         uint timestamp
@@ -57,7 +57,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     event TokenAmountReleased(
         address indexed toUser,
         string tokenSymbol,
-        address tokenAddress,
+        address indexed tokenAddress,
         uint256 amount,
         uint256 chainId,
         uint timestamp
@@ -66,14 +66,14 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     event NewTokenCreated(
         string tokenSymbol,
         string tokenName,
-        address tokenAddress,
+        address indexed tokenAddress,
         uint256 chainId,
         uint timestamp
     );
 
     event UserBalanceUpdated(
         string tokenSymbol,
-        address tokenAddress,
+        address indexed tokenAddress,
         address user,
         uint256 chainId,
         uint timestamp
@@ -144,7 +144,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         emit TokenAmountMinted(
             _toUser,
             _tokenSymbol,
-            _tokenName,
+            _tokenAddress,
             _amount,
             block.chainid,
             block.timestamp
