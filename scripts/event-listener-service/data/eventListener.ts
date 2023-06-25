@@ -66,11 +66,13 @@ async function registerSourceNetworkEventListeners() {
     });
 }
 
-async function readBlocksOnSourceFrom () {
+async function readBlocksOnSourceFrom (block) {
+    // verify, that the transaction is complete on the block
 
 }
 
-async function readBlocksOnTargetFrom () {
+async function readBlocksOnTargetFrom (block) {
+    // verify, that the transaction is complete on the block
 
 }
 
