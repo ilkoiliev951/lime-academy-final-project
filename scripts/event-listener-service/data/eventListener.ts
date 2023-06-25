@@ -47,31 +47,31 @@ async function registerTargetNetworkEventListeners() {
 }
 
 async function registerSourceNetworkEventListeners() {
-    contractTarget.on('NewTokenCreated', (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
+    contractTarget.on('NewTokenCreated', (event, tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
         const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'generic', chainId.toString())
         repository.saveNewTokenEvent(token)
     });
 
-    contractTarget.on('TokenAmountLocked', (user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
+    contractTarget.on('TokenAmountLocked', (event, user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
         console.log('Intercepted TokenAmountLocked event')
         const lockEvent: TokensLocked = new TokensLocked(tokenSymbol, tokenAddress, user, amount, chainId.toString(), lockedInContract, false, timestamp, true);
         repository.saveLockedEvent(lockEvent);
     });
 
-    contractTarget.on('TokenAmountReleased', (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
+    contractTarget.on('TokenAmountReleased', (event, user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
         console.log('Intercepted TokenAmountReleased event')
         const releaseEvent: TokensReleased = new TokensReleased(tokenSymbol, tokenAddress, user, amount, chainId.toString(), timestamp)
         repository.saveReleaseEvent(releaseEvent);
     });
 }
 
-async function readBlocksOnSourceFrom (block) {
+async function readBlocksOnSourceFrom (block: number) {
     // verify, that the transaction is complete on the block
 
 }
 
-async function readBlocksOnTargetFrom (block) {
+async function readBlocksOnTargetFrom (block: number) {
     // verify, that the transaction is complete on the block
 
 }

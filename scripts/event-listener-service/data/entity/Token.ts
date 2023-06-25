@@ -20,6 +20,9 @@ export class Token {
     @Column()
     chainId: string
 
+    @Column()
+    transactionVerified?: boolean
+
     constructor(tokenSymbol: string, tokenName: string, tokenAddress: string, tokenType: string, chainId: string) {
         this.tokenSymbol = tokenSymbol;
         this.tokenName = tokenName;

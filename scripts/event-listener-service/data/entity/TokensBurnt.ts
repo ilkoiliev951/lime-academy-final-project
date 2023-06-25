@@ -26,6 +26,9 @@ export class TokensBurnt {
     @Column()
     timestamp: string
 
+    @Column()
+    transactionVerified?: boolean
+
     constructor(tokenSymbol: string, tokenAddress: string, userAddress: string, amount: string, chainId: string, releasedOnSource: boolean, timestamp: string) {
         this.tokenSymbol = tokenSymbol;
         this.tokenAddress = tokenAddress;

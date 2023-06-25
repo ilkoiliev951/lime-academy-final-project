@@ -23,6 +23,9 @@ export class TokenBalance{
     @Column()
     chainId: string
 
+    @Column()
+    transactionVerified?: boolean
+
     constructor(userId: number, token: Token, userBridgeBalance: string, chainId: string) {
         this.userId = userId;
         this.token = token;

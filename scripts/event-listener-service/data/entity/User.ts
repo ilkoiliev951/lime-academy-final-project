@@ -16,7 +16,10 @@ export class User {
     userAddress: string
 
     @OneToMany(() => TokenBalance, balance => balance.user)
-    balances: TokenBalance[];
+    balances: TokenBalance[]
+
+    @Column()
+    transactionVerified?: boolean
 
     constructor(tokenSymbol: string, tokenAddress: string, userAddress: string, balances: TokenBalance[]) {
         this.tokenSymbol = tokenSymbol;

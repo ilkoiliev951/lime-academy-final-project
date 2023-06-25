@@ -32,6 +32,9 @@ export class TokensLocked {
     @Column()
     active: boolean
 
+    @Column()
+    transactionVerified?: boolean
+
     constructor(tokenSymbol: string, tokenAddress: string, userAddress: string, amount: string, chainId: string, lockedInContract: string, claimedOnTarget: boolean, timestamp: string, active: boolean) {
         this.tokenSymbol = tokenSymbol;
         this.tokenAddress = tokenAddress;

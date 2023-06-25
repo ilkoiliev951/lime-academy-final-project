@@ -6,6 +6,7 @@ import { TokensMinted} from './entity/TokensMinted';
 import { TransferRequest} from './entity/TransferRequest';
 import {Token} from "./entity/Token";
 import {AppDataSource} from "../data-source";
+import {EventNotFound} from './../../utils/exceptions/EventNotFound'
 
 export async function applyDBChanges() {
     try {
@@ -35,7 +36,7 @@ export async function updateLockedEvent(address: string, updatedEvent: Partial<T
 
     const lockEvents = await lockEventRepository.find({ where: { ['userAddress']: address } });
     if (!lockEvents) {
-        // throw error
+        throw new EventNotFound('TokensLocked event not present in database')
     }
     const updatedLock = Object.assign(lockEvents, updatedEvent);
     await lockEventRepository.save(updatedLock);
@@ -55,7 +56,7 @@ export async function updateBurntEvent(address: string, updatedEvent: Partial<To
 
     const burnEvents = await burnEventRepository.find({ where: { ['userAddress']: address } });
     if (!burnEvents) {
-        // throw error
+        throw new EventNotFound('TokensBurned event not present in database')
     }
     const updatedBurn = Object.assign(burnEvents, updatedEvent);
     await burnEventRepository.save(updatedBurn);
@@ -75,7 +76,7 @@ export async function updateReleaseEvent(address: string, updatedEvent: Partial<
 
     const releaseEvents = await releaseEventRepository.find({ where: { ['userAddress']: address } });
     if (!releaseEvents) {
-        // throw error
+        throw new EventNotFound('TokensReleased event not present in database')
     }
     const updatedRelease = Object.assign(releaseEvents, updatedEvent);
     await releaseEventRepository.save(updatedRelease);
@@ -95,7 +96,7 @@ export async function updateMintEvent(address: string, updatedEvent: Partial<Tok
 
     const mintEvents = await mintEventRepository.find({ where: { ['userAddress']: address } });
     if (!mintEvents) {
-        // throw error
+        throw new EventNotFound('TokensMinted event not present in database')
     }
     const updatedMint = Object.assign(mintEvents, updatedEvent);
     await mintEventRepository.save(updatedMint);
@@ -115,7 +116,7 @@ export async function updateTransferRequest(address: string, updatedEvent: Parti
 
     const tranferRequests = await transferRequestRepository.find({ where: { ['userAddress']: address } });
     if (!tranferRequests) {
-        // throw error
+        throw new EventNotFound('TransferRequest not present in database')
     }
     const updatedRequest = Object.assign(tranferRequests, updatedEvent);
     await transferRequestRepository.save(updatedRequest);

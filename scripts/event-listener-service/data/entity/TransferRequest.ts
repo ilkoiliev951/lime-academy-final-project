@@ -27,6 +27,9 @@ export class TransferRequest {
     @Column()
     timestamp: string
 
+    @Column()
+    transactionVerified?: boolean
+
     constructor(tokenSymbol: string, tokenAddress: string, userAddress: string, amount: string, sourceChain: string, targetChain: string, timestamp: string) {
         this.tokenSymbol = tokenSymbol;
         this.tokenAddress = tokenAddress;

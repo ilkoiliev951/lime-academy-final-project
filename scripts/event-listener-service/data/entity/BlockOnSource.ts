@@ -6,17 +6,8 @@ export class BlockOnSource {
     id: number
 
     @Column()
-    tokenSymbol: string
+    lastProcessedBlockId: number
 
     @Column()
-    tokenName: string
-
-    @Column()
-    tokenAddress: string
-
-    @Column()
-    tokenType: string
-
-    @Column()
-    la: string
+    timestamp: string
 }
