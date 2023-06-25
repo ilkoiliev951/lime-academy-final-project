@@ -1,4 +1,4 @@
-import {InvalidUserAddressError} from './exceptions/InvalidUserAddress'
+import {InvalidUserAddressError} from './../utils/exceptions/InvalidUserAddress'
 import express, { Request, Response } from 'express';
 
 const dotenv = require('dotenv');

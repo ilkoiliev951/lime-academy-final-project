@@ -4,6 +4,23 @@ import { TokensLocked} from './entity/TokensLocked';
 import { TokensReleased} from './entity/TokensReleased';
 import { TokensMinted} from './entity/TokensMinted';
 import { TransferRequest} from './entity/TransferRequest';
+import {Token} from "./entity/Token";
+import {AppDataSource} from "../data-source";
+
+export async function applyDBChanges() {
+    try {
+       await AppDataSource.connect()
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+export async function saveNewTokenEvent(newTokenEvent: Token): Promise<Token> {
+    const connection = getConnection();
+    const userRepository = connection.getRepository(Token);
+
+    return await userRepository.save(Token);
+}
 
 export async function saveLockedEvent(lockEvent: TokensLocked): Promise<TokensLocked> {
     const connection = getConnection();

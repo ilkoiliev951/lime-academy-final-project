@@ -16,7 +16,6 @@ export const COMMAND_ELEMENT_COUNT_DICT: Record<CommandKey, number> = {
     RELEASE: 5,
 };
 
-//
 export const SOURCE_CHAIN_ID = BigNumber.from(31337);
 export const TARGET_CHAIN_ID = BigNumber.from(11155111);
 

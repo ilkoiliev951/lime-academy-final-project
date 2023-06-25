@@ -31,4 +31,16 @@ export class TokensLocked {
 
     @Column()
     active: boolean
+
+    constructor(tokenSymbol: string, tokenAddress: string, userAddress: string, amount: string, chainId: string, lockedInContract: string, claimedOnTarget: boolean, timestamp: string, active: boolean) {
+        this.tokenSymbol = tokenSymbol;
+        this.tokenAddress = tokenAddress;
+        this.userAddress = userAddress;
+        this.amount = amount;
+        this.chainId = chainId;
+        this.lockedInContract = lockedInContract;
+        this.claimedOnTarget = claimedOnTarget;
+        this.timestamp = timestamp;
+        this.active = active;
+    }
 }

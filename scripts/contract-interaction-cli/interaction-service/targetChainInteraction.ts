@@ -18,7 +18,6 @@ export async function createToken(
     const wallet = getWallet(privateKey);
     const bridgeContract = getBridgeContract(wallet);
 
-
     // DB checks
     const createTokenTx = await bridgeContract.createToken(tokenName, tokenSymbol, 'wrapped');
     await createTokenTx.wait()

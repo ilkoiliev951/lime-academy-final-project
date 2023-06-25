@@ -18,7 +18,5 @@ export async function validateMint() {
 export async function validateNewToken() {
     const res = repository.fetchAllTokens();
     // filter for the token symbol
-    res.then(
-
-    )
+    res.then()
 }

@@ -17,4 +17,11 @@ export class User {
 
     @OneToMany(() => TokenBalance, balance => balance.user)
     balances: TokenBalance[];
+
+    constructor(tokenSymbol: string, tokenAddress: string, userAddress: string, balances: TokenBalance[]) {
+        this.tokenSymbol = tokenSymbol;
+        this.tokenAddress = tokenAddress;
+        this.userAddress = userAddress;
+        this.balances = balances;
+    }
 }

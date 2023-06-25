@@ -26,4 +26,14 @@ export class TransferRequest {
 
     @Column()
     timestamp: string
+
+    constructor(tokenSymbol: string, tokenAddress: string, userAddress: string, amount: string, sourceChain: string, targetChain: string, timestamp: string) {
+        this.tokenSymbol = tokenSymbol;
+        this.tokenAddress = tokenAddress;
+        this.userAddress = userAddress;
+        this.amount = amount;
+        this.sourceChain = sourceChain;
+        this.targetChain = targetChain;
+        this.timestamp = timestamp;
+    }
 }

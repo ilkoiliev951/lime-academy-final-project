@@ -22,4 +22,11 @@ export class TokenBalance{
 
     @Column()
     chainId: string
+
+    constructor(userId: number, token: Token, userBridgeBalance: string, chainId: string) {
+        this.userId = userId;
+        this.token = token;
+        this.userBridgeBalance = userBridgeBalance;
+        this.chainId = chainId;
+    }
 }

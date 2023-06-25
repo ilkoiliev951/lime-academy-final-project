@@ -1,5 +1,4 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
-import {BigNumber} from "ethers";
 
 @Entity('token')
 export class Token {
@@ -20,4 +19,12 @@ export class Token {
 
     @Column()
     chainId: string
+
+    constructor(tokenSymbol: string, tokenName: string, tokenAddress: string, tokenType: string, chainId: string) {
+        this.tokenSymbol = tokenSymbol;
+        this.tokenName = tokenName;
+        this.tokenAddress = tokenAddress;
+        this.tokenType = tokenType;
+        this.chainId = chainId;
+    }
 }

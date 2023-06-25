@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./GenericERC20.sol";
 import "./WrappedERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 error InvalidAmount();
 error InvalidTokenType();
@@ -14,8 +15,16 @@ error TokenDoesntExist();
 
 contract EVMBridge is Ownable, ReentrancyGuard {
     mapping(string => address) public tokens;
+    mapping(bytes32 => UserBalance) private balanceKeyMap;
 
     constructor() ReentrancyGuard() {}
+
+    struct UserBalance {
+        string tokenSymbol;
+        address tokenAddress;
+        uint256 tokenBalance;
+        address userAddress;
+    }
 
     event TokenAmountLocked(
         address indexed user,
@@ -28,7 +37,9 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     );
 
     event TokenAmountBurned(
+        address indexed user,
         string tokenSymbol,
+        address tokenAddress,
         uint256 amount,
         uint256 chainId,
         uint timestamp
@@ -37,14 +48,14 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     event TokenAmountMinted(
         address indexed user,
         string tokenSymbol,
-        string tokenName,
+        string tokenAddress,
         uint256 amount,
         uint256 chainId,
         uint timestamp
     );
 
     event TokenAmountReleased(
-        address toUser,
+        address indexed toUser,
         string tokenSymbol,
         address tokenAddress,
         uint256 amount,
@@ -56,6 +67,14 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         string tokenSymbol,
         string tokenName,
         address tokenAddress,
+        uint256 chainId,
+        uint timestamp
+    );
+
+    event UserBalanceUpdated(
+        string tokenSymbol,
+        address tokenAddress,
+        address user,
         uint256 chainId,
         uint timestamp
     );
@@ -151,6 +170,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     }
 
     function burnWithPermit(
+        string memory userBalanceHash,
         string memory _tokenSymbol,
         address _tokenAddress,
         address _from,
@@ -178,11 +198,47 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         );
 
         WrappedERC20(_tokenAddress).burnFrom(_from, _amount);
-        emit TokenAmountBurned(_tokenSymbol, _amount, block.chainid, block.timestamp);
+        emit TokenAmountBurned(_from, _tokenSymbol, _tokenAddress, _amount, block.chainid, block.timestamp);
+        return true;
+    }
+
+    /**
+    Purpose of the function is updating the user balance from the bridge owner,
+    in order to check the validity of the calls, when the contract is called
+    outside of the CLI context and the database cannot act as a validator.
+    */
+    function updateUserBridgeBalance(address _user, uint256 _newBalance, string memory _tokenSymbol) external onlyOwner()
+    isValidString(_tokenSymbol)
+    isValidAmount(_newBalance)
+    returns (bool) {
+        // check struct for null
+        address tokenAddress = tokens[_tokenSymbol];
+        bytes32 balanceKey = _generateHashId(_user, _tokenSymbol, block.chainid);
+        if (balanceKeyMap[balanceKey].userAddress == address(0)) {
+            balanceKeyMap[balanceKey] = UserBalance(_tokenSymbol, tokenAddress, _newBalance, _user);
+        } else {
+            balanceKeyMap[balanceKey].tokenBalance = _newBalance;
+        }
+
+        emit UserBalanceUpdated(_tokenSymbol, tokenAddress, _user, block.chainid, block.timestamp);
+        return true;
+    }
+
+    function amountIsValid(uint256 newOperationAmount, string memory _tokenSymbol) private view returns (bool){
+        bytes32 balanceKey = _generateHashId(msg.sender, _tokenSymbol, block.chainid);
+        UserBalance memory userBalance = balanceKeyMap[balanceKey];
+        if (newOperationAmount==0 || newOperationAmount > userBalance.tokenBalance) {
+            revert InvalidAmount();
+        }
         return true;
     }
 
     function compareStrings(string memory val1, string memory val2) public pure returns (bool) {
         return keccak256(abi.encodePacked(val1)) == keccak256(abi.encodePacked(val2));
+    }
+
+    function _generateHashId(address _userAddress, string memory _tokenSymbol, uint256 _chainId) private pure returns (bytes32) {
+        string memory balanceKeyInput = string.concat(Strings.toHexString(uint256(uint160(_userAddress)), 20), _tokenSymbol, Strings.toString(_chainId));
+        return keccak256(abi.encodePacked(balanceKeyInput));
     }
 }

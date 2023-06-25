@@ -1,5 +1,4 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
-import {BigNumber} from "ethers";
 
 @Entity('tokens_minted_event')
 export class TokensMinted {
@@ -23,4 +22,13 @@ export class TokensMinted {
 
     @Column()
     timestamp: string
+
+    constructor(tokenSymbol: string, tokenAddress: string, userAddress: string, amount: string, chainId: string, timestamp: string) {
+        this.tokenSymbol = tokenSymbol;
+        this.tokenAddress = tokenAddress;
+        this.userAddress = userAddress;
+        this.amount = amount;
+        this.chainId = chainId;
+        this.timestamp = timestamp;
+    }
 }
