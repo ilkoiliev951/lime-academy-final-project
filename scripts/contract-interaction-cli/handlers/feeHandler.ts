@@ -1,6 +1,5 @@
 import {BigNumber, ethers} from "ethers";
 import {BRIDGE_FEE_PERCENTAGE_MULTIPLIER} from "../utils/constants";
-import secrets from "../../../secrets.json";
 import {GenericERC20, WrappedERC20} from "../../../typechain-types";
 
 const interactionUtils = require('./../utils/contractInteractionUtils')
