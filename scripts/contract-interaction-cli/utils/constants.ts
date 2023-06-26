@@ -23,3 +23,6 @@ export const PERMIT_DEADLINE = ethers.constants.MaxUint256;
 
 // Fee is set to be 0.1% of the total transaction amount
 export const BRIDGE_FEE_PERCENTAGE_MULTIPLIER = BigNumber.from('0.001');
+
+// URLs
+export const VALIDATOR_BASE_URL = 'http://localhost:8082/api/validator/';

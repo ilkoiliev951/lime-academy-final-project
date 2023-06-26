@@ -56,5 +56,4 @@ export async function generateERC20PermitSignature (
     );
 
     return {v,r,s}
-
 }

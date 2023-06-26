@@ -6,9 +6,24 @@ const port = process.env.PORT;
 const dataRepository = require('./data/repository/repository')
 const validator  = require('./utils/validator')
 
-app.get('/api/validator/', (req:Request, res:Response) => {
-    let lockedEventRecords = dataRepository.fetchLockedTokenEvents();
-    res.send(lockedEventRecords)
+app.post('/api/validator/validate-new-token', (req:Request, res:Response) => {
+    let burntEventRecords = dataRepository.fetchBurntTokenEvents();
+    res.send(burntEventRecords);
+});
+
+app.post('/api/validator/validate-mint', (req:Request, res:Response) => {
+    let burntEventRecords = dataRepository.fetchBurntTokenEvents();
+    res.send(burntEventRecords);
+});
+
+app.post('/api/validator/validate-burn', (req:Request, res:Response) => {
+    let burntEventRecords = dataRepository.fetchBurntTokenEvents();
+    res.send(burntEventRecords);
+});
+
+app.post('/api/validator/validate-release', (req:Request, res:Response) => {
+    let burntEventRecords = dataRepository.fetchBurntTokenEvents();
+    res.send(burntEventRecords);
 });
 
 app.post('/api/validator/update-balance', (req:Request, res:Response) => {

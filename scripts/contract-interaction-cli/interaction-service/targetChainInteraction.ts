@@ -1,24 +1,19 @@
-import {BigNumber, ethers, Wallet} from 'ethers';
-import secrets from '../../../secrets.json';
-import {MissingPrivateKeyException} from "../../utils/exceptions/MissingPrivateKeyException";
-
+import {BigNumber} from 'ethers';
 const config = require('./../../../config.json')
 const constants = require('./../utils/constants')
-const bridge = require("./../../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
-const wrappedERC20 = require("../../../artifacts/contracts/WrappedERC20.sol/WrappedERC20.json");
 const signatureGenerator = require('./../../utils/permitSignatureGenerator')
 const validator = require('./../validator-service/validator')
-const contractAddress = config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE;
-const provider = getProvider();
+const interactionUtils = require('./../utils/contractInteractionUtils')
+const contractAddress = config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET;
+const provider = interactionUtils.getProvider(config.PROJECT_SETTINGS.isTargetLocal)
 
 export async function createToken(
     privateKey: string,
     tokenName: string,
     tokenSymbol: string) {
-    const wallet = getWallet(privateKey);
-    const bridgeContract = getBridgeContract(wallet);
+    const wallet = interactionUtils.getWallet(privateKey, provider);
+    const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
-    // DB checks
     const createTokenTx = await bridgeContract.createToken(tokenName, tokenSymbol, 'wrapped');
     await createTokenTx.wait()
 
@@ -30,12 +25,12 @@ export async function mint (
     tokenAddress: string,
     amount: BigNumber,
     privateKey: string) {
-    // gas estimation here
+
 
     // DB checks
-    const wallet = getWallet(privateKey);
+    const wallet = interactionUtils.getWallet(privateKey, provider);
     const userAddressPub = wallet.getAddress();
-    const bridgeContract = getBridgeContract(wallet);
+    const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
     const mintTx = await bridgeContract.mint(
         tokenSymbol,
@@ -53,19 +48,15 @@ export async function burnWithPermit(
     amount: BigNumber,
     privateKey: string) {
 
-    //   // calculate fee
-    //     // calculate gas
-    //     // list to user
-
-    // DB checks
-    const wallet = getWallet(privateKey);
+    const wallet = interactionUtils.getWallet(privateKey, provider);
     const userAddressPub = wallet.getAddress();
-    const bridgeContract = getBridgeContract(wallet);
-    const erc20Contract = getGenericERC20Contract(wallet, tokenAddress);
+    const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
+    const erc20Contract = interactionUtils.getGenericERC20Contract(wallet, tokenAddress);
 
     const {v,r,s} = signatureGenerator.generateERC20PermitSignature(
         wallet,
         erc20Contract.name(),
+        '1',
         constants.TARGET_CHAIN_ID,
         tokenAddress,
         userAddressPub,
@@ -89,57 +80,11 @@ export async function burnWithPermit(
     printTransactionOutput(burnTx)
 }
 
-function getGenericERC20Contract(wallet: Wallet, tokenContractAddress: string) {
-    return new ethers.Contract(
-        tokenContractAddress,
-        wrappedERC20.abi,
-        wallet
-    );
-}
-
-function getBridgeContract(wallet: Wallet) {
-    return new ethers.Contract(
-        contractAddress,
-        bridge.abi,
-        wallet
-    );
-}
-
-function getUserPrivateKey(cliKeyInput: string) {
-    if (cliKeyInput == null) {
-        let secretsKey = secrets.PRIVATE_KEY;
-        if (secretsKey == null) {
-            throw new MissingPrivateKeyException('Wallet private key was not provided. Transaction will not execute.');
-        }
-        return secretsKey;
-    }
-    return cliKeyInput;
-}
-
-function getProvider() {
-    if (config.PROJECT_SETTINGS.isTargetLocal) {
-        return new ethers.providers.JsonRpcProvider(
-            "http://localhost:8545"
-        );
-    }
-    return new ethers.providers.InfuraProvider(
-        "sepolia",
-        secrets.INFURA_KEY
-    );
-}
-
-function getWallet(privateKey: string) {
-    return new ethers.Wallet(
-        getUserPrivateKey(privateKey),
-        provider
-    );
-}
-
 function printTransactionOutput(transaction: any) {
     console.info('Completed transaction output:');
     console.info(transaction);
 }
 
-function printTransactionPriorEstimations(feeEstimate: any, gasEstimate: any) {
+function printPreTransactionEstimations(feeEstimate: any, gasEstimate: any) {
     console.info('Completed transaction output:');
 }

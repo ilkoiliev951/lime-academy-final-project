@@ -71,7 +71,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         uint timestamp
     );
 
-    event UserBalanceUpdated(
+    event UserBridgeBalanceUpdated(
         string tokenSymbol,
         address indexed tokenAddress,
         address user,
@@ -220,7 +220,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
             balanceKeyMap[balanceKey].tokenBalance = _newBalance;
         }
 
-        emit UserBalanceUpdated(_tokenSymbol, tokenAddress, _user, block.chainid, block.timestamp);
+        emit UserBridgeBalanceUpdated(_tokenSymbol, tokenAddress, _user, block.chainid, block.timestamp);
         return true;
     }
 
