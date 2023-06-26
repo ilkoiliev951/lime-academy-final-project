@@ -47,3 +47,32 @@ export function getWrappedERC20Contract(wallet: Wallet, tokenContractAddress: st
         wallet
     );
 }
+
+export async function transactionIsIncludedInBlock (provider, txHash: string) {
+    let included = false;
+    let retryCount = 0;
+    while (!included || retryCount<=3) {
+        try {
+            const receipt = await provider.getTransactionReceipt(txHash);
+            if (receipt && receipt.blockNumber) {
+                console.log('Transaction is confirmed and included in block', receipt.blockNumber);
+                included = true;
+            } else {
+                retryCount++;
+                console.log('Transaction is still pending. Waiting for 5 seconds before next check.');
+                await sleep(10000);
+                if (retryCount == 3) {
+
+                }
+            }
+        } catch (error) {
+            console.error('Error retrieving transaction receipt:', error);
+            break;
+        }
+    }
+    return included;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

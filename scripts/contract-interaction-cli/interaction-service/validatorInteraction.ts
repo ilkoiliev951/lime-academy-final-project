@@ -5,41 +5,37 @@ export async function validateNewTokenRequest (tokenSymbol: string, tokenName: s
     let requestBodyJson = {
         tokenSymbol: tokenSymbol,
         tokenName: tokenName
-    };
-
+    }
     sendValidatorRequest(requestBodyJson, 'validate-new-token')
 }
 
-export async function validateMintRequest () {
-    let requestBodyJson = {
-
-    };
-
+export async function validateMintRequest (tokenSymbol, tokenAddress, amount, userAddress) {
+    let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
     sendValidatorRequest(requestBodyJson, 'validate-mint')
 }
 
-export async function validateBurnRequest () {
-    let requestBodyJson = {
-
-    };
-
+export async function validateBurnRequest (tokenSymbol, tokenAddress, amount, userAddress) {
+    let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
     sendValidatorRequest(requestBodyJson, 'validate-burn')
 }
 
-export async function validateReleaseRequest () {
-    let requestBodyJson = {
-
-    };
-
+export async function validateReleaseRequest (tokenSymbol, tokenAddress, amount, userAddress) {
+    let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
     sendValidatorRequest(requestBodyJson, 'validate-release')
 }
 
-export async function updateUserBalanceRequest () {
-    let requestBodyJson = {
-
-    };
-
+export async function updateUserBalanceRequest (tokenSymbol, tokenAddress, amount, userAddress) {
+    let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
     sendValidatorRequest(requestBodyJson, 'update-balance')
+}
+
+function getRequestBody(tokenSymbol, tokenAddress, amount, userAddress) {
+    return  {
+        tokenSymbol: tokenSymbol,
+        tokenAddress: tokenAddress,
+        amount: amount,
+        user: userAddress
+    };
 }
 
 function sendValidatorRequest(requestBody: any, apiEndpoint: string) {
@@ -52,7 +48,6 @@ function sendValidatorRequest(requestBody: any, apiEndpoint: string) {
     }, function (error, response, body){
         console.log(response);
     });
-
 }
 
 

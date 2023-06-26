@@ -2,15 +2,16 @@ import {BigNumber} from 'ethers';
 const config = require('./../../../config.json')
 const constants = require('./../utils/constants')
 const signatureGenerator = require('./../../utils/permitSignatureGenerator')
-const validator = require('./../validator-service/validator')
 const interactionUtils = require('./../utils/contractInteractionUtils')
 const contractAddress = config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET;
 const provider = interactionUtils.getProvider(config.PROJECT_SETTINGS.isTargetLocal)
+const validator = require('./validatorInteraction')
 
 export async function createToken(
     privateKey: string,
     tokenName: string,
     tokenSymbol: string) {
+
     const wallet = interactionUtils.getWallet(privateKey, provider);
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
@@ -29,6 +30,7 @@ export async function mint (
     // DB checks
     const wallet = interactionUtils.getWallet(privateKey, provider);
     const userAddressPub = wallet.getAddress();
+    await validator.validateMintRequest(tokenSymbol, tokenAddress, amount, userAddressPub);
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
     const mintTx = await bridgeContract.mint(
@@ -37,8 +39,13 @@ export async function mint (
         userAddressPub,
         amount
     )
-
     await mintTx.wait()
+
+    const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, mintTx.hash)
+    if (transactionComplete) {
+        await validator.updateUserBalanceRequest(tokenSymbol, tokenAddress, amount, wallet.address)
+        printTransactionOutput(mintTx)
+    }
 }
 
 export async function burnWithPermit(
@@ -48,6 +55,8 @@ export async function burnWithPermit(
     privateKey: string) {
 
     const wallet = interactionUtils.getWallet(privateKey, provider);
+    await validator.validateBurnRequest(tokenSymbol, tokenAddress, amount, wallet.address);
+
     const userAddressPub = wallet.getAddress();
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
     const erc20Contract = interactionUtils.getGenericERC20Contract(wallet, tokenAddress);
@@ -76,7 +85,11 @@ export async function burnWithPermit(
     )
     await burnTx.wait()
 
-    printTransactionOutput(burnTx)
+    const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, burnTx.hash)
+    if (transactionComplete) {
+        await validator.updateUserBalanceRequest(tokenSymbol, tokenAddress, amount, wallet.address)
+        printTransactionOutput(burnTx)
+    }
 }
 
 function printTransactionOutput(transaction: any) {

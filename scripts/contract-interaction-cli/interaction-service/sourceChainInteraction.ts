@@ -11,6 +11,8 @@ export async function createToken(
     privateKey: string,
     tokenName: string,
     tokenSymbol: string) {
+    await validator.validateNewTokenRequest(tokenSymbol, tokenName);
+
     const wallet = interactionUtils.getWallet(privateKey, provider);
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
@@ -26,13 +28,6 @@ export async function lockWithPermit(
     amount: BigNumber,
     privateKey: string) {
 
-    //validate on DB
-
-    //   // calculate fee
-    //     // calculate gas
-    //     // list to user
-
-    // DB checks
     const wallet =  interactionUtils.getWallet(privateKey, provider);
     const userAddressPub = wallet.getAddress();
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
@@ -72,18 +67,21 @@ export async function release(
     tokenSymbol: string,
     amount: BigNumber,
     privateKey: string) {
-    //   // calculate fee
-    //     // calculate gas
-    //     // list to user
 
-    // DB checks
     const wallet = interactionUtils.getWallet(privateKey, provider);
+
+    await validator.validateReleaseRequest(tokenSymbol, tokenAddress, amount, wallet.address);
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
     const releaseTx = await bridgeContract.release(amount, tokenAddress, tokenSymbol)
     await releaseTx.wait()
 
-    printTransactionOutput(releaseTx)
+    const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, releaseTx.hash)
+
+    if (transactionComplete) {
+        await validator.updateUserBalanceRequest(tokenSymbol, tokenAddress, amount, wallet.address)
+        printTransactionOutput(releaseTx)
+    }
 }
 
 function printTransactionOutput(transaction: any) {
