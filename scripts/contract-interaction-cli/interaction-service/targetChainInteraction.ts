@@ -26,7 +26,6 @@ export async function mint (
     amount: BigNumber,
     privateKey: string) {
 
-
     // DB checks
     const wallet = interactionUtils.getWallet(privateKey, provider);
     const userAddressPub = wallet.getAddress();

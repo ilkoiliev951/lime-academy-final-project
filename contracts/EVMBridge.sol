@@ -206,6 +206,8 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     Purpose of the function is updating the user balance from the bridge owner,
     in order to check the validity of the calls, when the contract is called
     outside of the CLI context and the database cannot act as a validator.
+    By updating the bridge balance only after interaction with the CLI,
+    we restrict users to only interact with the bridge through our system.
     */
     function updateUserBridgeBalance(address _user, uint256 _newBalance, string memory _tokenSymbol) external onlyOwner()
     isValidString(_tokenSymbol)
