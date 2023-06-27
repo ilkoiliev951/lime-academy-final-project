@@ -1,5 +1,8 @@
-import {ethers, Wallet} from "ethers";
+import {BigNumber, ethers, Wallet} from "ethers";
 import secrets from "../../../secrets.json";
+import {calculateApproximateGasPriceInETH} from "../handlers/gasHandler";
+import {calculateFee} from "../handlers/feeHandler";
+import {LOGGER} from "./constants";
 
 const bridge = require("./../../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
 const genericERC20 = require("../../../artifacts/contracts/GenericERC20.sol/GenericERC20.json");
@@ -51,18 +54,19 @@ export function getWrappedERC20Contract(wallet: Wallet, tokenContractAddress: st
 export async function transactionIsIncludedInBlock (provider, txHash: string) {
     let included = false;
     let retryCount = 0;
-    while (!included || retryCount<=3) {
+    while (!included || retryCount<4) {
         try {
             const receipt = await provider.getTransactionReceipt(txHash);
             if (receipt && receipt.blockNumber) {
-                console.log('Transaction is confirmed and included in block', receipt.blockNumber);
+                LOGGER.info('Transaction is confirmed and included in block', receipt.blockNumber);
                 included = true;
             } else {
                 retryCount++;
-                console.log('Transaction is still pending. Waiting for 5 seconds before next check.');
+                LOGGER.info('Transaction is still pending. Waiting for 5 seconds before next check.');
                 await sleep(10000);
-                if (retryCount == 3) {
-
+                if (retryCount == 4) {
+                    LOGGER.error('Failed to fetch info on transaction block inclusion.');
+                    included = false;
                 }
             }
         } catch (error) {
@@ -75,4 +79,13 @@ export async function transactionIsIncludedInBlock (provider, txHash: string) {
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export async function calculatePreTransactionEstimates(amount: BigNumber, tokenSymbol: string, customGasLimit?: number) {
+    const maxGasInEth = calculateApproximateGasPriceInETH(customGasLimit);
+    const bridgeFee = calculateFee(amount);
+
+    LOGGER.info('Estimated Bridge Fee: ' + bridgeFee);
+    LOGGER.info('Approximate gas estimate: ' + maxGasInEth);
+    LOGGER.info('Do you wish to proceed? (y/n)');
 }

@@ -118,6 +118,8 @@ describe("EVM Token Bridge", function () {
                 0)).to.be.revertedWithCustomError(bridge, 'InvalidAmount');
     });
 
+
+
     it("Should revert when trying to mint with invalid amount", async function () {
         const signer = await ethers.getSigners();
         const testUserAddress = signer[0].address

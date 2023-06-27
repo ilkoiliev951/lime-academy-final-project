@@ -1,4 +1,5 @@
 import {BigNumber, ethers} from "ethers";
+const fs = require('fs')
 
 export const COMMANDS = {
     LOCK:  'lock',
@@ -26,3 +27,6 @@ export const BRIDGE_FEE_PERCENTAGE_MULTIPLIER = BigNumber.from('0.001');
 
 // URLs
 export const VALIDATOR_BASE_URL = 'http://localhost:8082/api/validator/';
+
+// Logger
+export const LOGGER = new console.Console(fs.createWriteStream("log/validator_api.log"));

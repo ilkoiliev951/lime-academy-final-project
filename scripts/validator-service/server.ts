@@ -3,12 +3,8 @@ import express, { Request, Response } from 'express';
 const app = express();
 const port = process.env.VALIDATOR_API_PORT;
 const dataSource = require('./data/dataSource')
+const validator = require('./data/dbValidator')
 
-const dataRepository = require('./data/dbValidator')
-const validator  = require('./utils/validator')
-
-
-//Establish DB connection
 dataSource
     .initialize()
     .then(() => {
@@ -19,32 +15,49 @@ dataSource
     })
 
 
-app.post('/api/validator/validate-new-token', (req:Request, res:Response) => {
-    //let burntEventRecords = dataRepository.
-    //res.send(burntEventRecords);
+ app.post('/api/validator/validate-new-token', async (req:Request, res:Response) => {
+    const newTokenRequestIsValid = await validator.validateNewToken(req.body.tokenSymbol, req.body.tokenName);
+    if (newTokenRequestIsValid) {
+        res.sendStatus(200);
+        return;
+    }
+    res.sendStatus(406);
 });
 
-app.post('/api/validator/validate-mint', (req:Request, res:Response) => {
-   // let burntEventRecords = dataRepository.fetchBurntTokenEvents();
-   // res.send(burntEventRecords);
+app.post('/api/validator/validate-mint', async (req:Request, res:Response) => {
+   const mintRequestIsValid = await validator.validateMint(req.body.tokenSymbol, req.body.tokenAddress, req.body.amount, req.body.user);
+    if (mintRequestIsValid) {
+        res.sendStatus(200);
+        return;
+    }
+    res.sendStatus(406);
 });
 
-app.post('/api/validator/validate-burn', (req:Request, res:Response) => {
-    // let burntEventRecords = dataRepository.fetchBurntTokenEvents();
-    //res.send(burntEventRecords);
+app.post('/api/validator/validate-burn', async (req:Request, res:Response) => {
+    const burnRequestIsValid = await validator.validateBurn(req.body.tokenSymbol, req.body.tokenAddress, req.body.amount, req.body.user);
+    if (burnRequestIsValid) {
+        res.sendStatus(200);
+        return;
+    }
+    res.sendStatus(406);
 });
 
-app.post('/api/validator/validate-release', (req:Request, res:Response) => {
-    // let burntEventRecords = dataRepository.fetchBurntTokenEvents();
-    // res.send(burntEventRecords);
+app.post('/api/validator/validate-release', async (req:Request, res:Response) => {
+    const releaseRequestIsValid = await validator.validateRelease(req.body.tokenSymbol, req.body.tokenAddress, req.body.amount, req.body.user);
+    if (releaseRequestIsValid) {
+        res.sendStatus(200);
+        return;
+    }
+    res.sendStatus(406);
 });
 
-app.post('/api/validator/update-balance', (req:Request, res:Response) => {
-    // update the db user balance for both networks
-    // update the user balance on both chains
-
-    // let burntEventRecords = dataRepository.fetchBurntTokenEvents();
-    // res.send(burntEventRecords);
+app.post('/api/validator/update-balance', async (req:Request, res:Response) => {
+    const userBalanceUpdated = await validator.updateUserBalance(req.body.tokenSymbol, req.body.tokenAddress, req.body.amount, req.body.user);
+    if (userBalanceUpdated) {
+        res.sendStatus(200);
+        return;
+    }
+    res.sendStatus(406);
 });
 
 app.listen(port, () => {

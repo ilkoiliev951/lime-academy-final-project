@@ -49,5 +49,3 @@ function sendValidatorRequest(requestBody: any, apiEndpoint: string) {
         console.log(response);
     });
 }
-
-

@@ -1,4 +1,7 @@
 import {BigNumber} from 'ethers';
+import {LOGGER} from "../utils/constants";
+import {transferFeeOnSource} from "../handlers/feeHandler";
+
 const validator = require('./validatorInteraction')
 const config = require('./../../../config.json')
 const constants = require('./../utils/constants')
@@ -27,6 +30,8 @@ export async function lockWithPermit(
     tokenAddress: string,
     amount: BigNumber,
     privateKey: string) {
+
+    await transferFeeOnSource(privateKey, amount,tokenAddress);
 
     const wallet =  interactionUtils.getWallet(privateKey, provider);
     const userAddressPub = wallet.getAddress();
@@ -58,8 +63,11 @@ export async function lockWithPermit(
     )
     await lockTx.wait()
 
-    // update user balance from validator
-    printTransactionOutput(lockTx)
+    const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, lockTx.hash)
+    if (transactionComplete) {
+        await validator.updateUserBalanceRequest(tokenSymbol, tokenAddress, amount, wallet.address)
+        printTransactionOutput(lockTx)
+    }
 }
 
 export async function release(
@@ -69,7 +77,6 @@ export async function release(
     privateKey: string) {
 
     const wallet = interactionUtils.getWallet(privateKey, provider);
-
     await validator.validateReleaseRequest(tokenSymbol, tokenAddress, amount, wallet.address);
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
@@ -77,7 +84,6 @@ export async function release(
     await releaseTx.wait()
 
     const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, releaseTx.hash)
-
     if (transactionComplete) {
         await validator.updateUserBalanceRequest(tokenSymbol, tokenAddress, amount, wallet.address)
         printTransactionOutput(releaseTx)
@@ -87,8 +93,4 @@ export async function release(
 function printTransactionOutput(transaction: any) {
     console.info('Completed transaction output:');
     console.info(transaction);
-}
-
-function printTransactionPriorEstimations(feeEstimate: any, gasEstimate: any) {
-    console.info('Completed transaction output:');
 }

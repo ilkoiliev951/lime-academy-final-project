@@ -1,4 +1,5 @@
 import {BigNumber} from 'ethers';
+import {transferFeeOnTarget} from "../handlers/feeHandler";
 const config = require('./../../../config.json')
 const constants = require('./../utils/constants')
 const signatureGenerator = require('../../utils/helpers/permitSignatureGenerator')
@@ -26,8 +27,6 @@ export async function mint (
     tokenAddress: string,
     amount: BigNumber,
     privateKey: string) {
-
-    // DB checks
     const wallet = interactionUtils.getWallet(privateKey, provider);
     const userAddressPub = wallet.getAddress();
     await validator.validateMintRequest(tokenSymbol, tokenAddress, amount, userAddressPub);
@@ -53,7 +52,7 @@ export async function burnWithPermit(
     tokenAddress: string,
     amount: BigNumber,
     privateKey: string) {
-
+    await transferFeeOnTarget(privateKey, amount, tokenAddress);
     const wallet = interactionUtils.getWallet(privateKey, provider);
     await validator.validateBurnRequest(tokenSymbol, tokenAddress, amount, wallet.address);
 
@@ -95,8 +94,4 @@ export async function burnWithPermit(
 function printTransactionOutput(transaction: any) {
     console.info('Completed transaction output:');
     console.info(transaction);
-}
-
-function printPreTransactionEstimations(feeEstimate: any, gasEstimate: any) {
-    console.info('Completed transaction output:');
 }

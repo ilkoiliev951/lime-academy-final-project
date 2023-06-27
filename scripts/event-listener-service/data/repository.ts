@@ -3,7 +3,6 @@ import { TokensBurnt} from '../../entity/TokensBurnt';
 import { TokensLocked} from '../../entity/TokensLocked';
 import { TokensReleased} from '../../entity/TokensReleased';
 import { TokensMinted} from '../../entity/TokensMinted';
-import { TransferRequest} from '../../entity/TransferRequest';
 import {Token} from "../../entity/Token";
 import {AppDataSource} from "./data-source";
 import {EventNotFound} from '../../utils/exceptions/EventNotFound'
@@ -101,24 +100,4 @@ export async function updateMintEvent(address: string, updatedEvent: Partial<Tok
     const updatedMint = Object.assign(mintEvents, updatedEvent);
     await mintEventRepository.save(updatedMint);
     return updatedMint;
-}
-
-export async function saveTransferRequest(transferRequest: TransferRequest): Promise<TransferRequest> {
-    const connection = getConnection();
-    const userRepository = connection.getRepository(TransferRequest);
-
-    return await userRepository.save(transferRequest);
-}
-
-export async function updateTransferRequest(address: string, updatedEvent: Partial<TransferRequest>): Promise<any[]> {
-    const connection = getConnection();
-    const transferRequestRepository = connection.getRepository(TransferRequest);
-
-    const tranferRequests = await transferRequestRepository.find({ where: { ['userAddress']: address } });
-    if (!tranferRequests) {
-        throw new EventNotFound('TransferRequest not present in database')
-    }
-    const updatedRequest = Object.assign(tranferRequests, updatedEvent);
-    await transferRequestRepository.save(updatedRequest);
-    return updatedRequest;
 }

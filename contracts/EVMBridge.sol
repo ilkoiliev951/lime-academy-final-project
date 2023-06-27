@@ -79,14 +79,14 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         uint timestamp
     );
 
-    modifier isValidAmount(uint256 _amount) {
+    modifier isValidAmountInput(uint256 _amount) {
         if (_amount <= 0) {
             revert InvalidAmount();
         }
         _;
     }
 
-    modifier isValidString (string memory _input) {
+    modifier isValidString(string memory _input) {
         bytes memory tempSymbol = bytes(_input);
         if (tempSymbol.length == 0) {
             revert InvalidStringInput();
@@ -103,7 +103,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external payable nonReentrant() isValidAmount(_amount) isValidString(_tokenSymbol) {
+    ) external payable nonReentrant() isValidAmountInput(_amount) isValidString(_tokenSymbol) {
 
         IERC20Permit(_tokenAddress).permit(
             _user,
@@ -119,7 +119,9 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.chainid, block.timestamp);
     }
 
-    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external nonReentrant() isValidAmount(_amount) isValidString(_tokenSymbol) {
+    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external nonReentrant() isValidAmountInput(_amount) isValidString(_tokenSymbol) {
+        require(bridgeAmountIsValid(_amount, _tokenSymbol) == true);
+
         address user = msg.sender;
         IERC20(_tokenAddress).transfer(user, _amount);
         emit TokenAmountReleased(user, _tokenSymbol, _tokenAddress, _amount, block.chainid, block.timestamp);
@@ -134,7 +136,9 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     nonReentrant()
     isValidString(_tokenName)
     isValidString(_tokenSymbol)
-    isValidAmount(_amount) {
+    isValidAmountInput(_amount) {
+        require(bridgeAmountIsValid(_amount, _tokenSymbol) == true);
+
         if (tokens[_tokenSymbol] == address(0)) {
             revert TokenDoesntExist();
         }
@@ -183,9 +187,10 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     external
     nonReentrant()
     isValidString(_tokenSymbol)
-    isValidAmount(_amount)
+    isValidAmountInput(_amount)
     returns (bool)
     {
+        require(bridgeAmountIsValid(_amount, _tokenSymbol) == true);
 
         IERC20Permit(_tokenAddress).permit(
             _from,
@@ -211,7 +216,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     */
     function updateUserBridgeBalance(address _user, uint256 _newBalance, string memory _tokenSymbol) external onlyOwner()
     isValidString(_tokenSymbol)
-    isValidAmount(_newBalance)
+    isValidAmountInput(_newBalance)
     returns (bool) {
         // check struct for null
         address tokenAddress = tokens[_tokenSymbol];
@@ -226,7 +231,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         return true;
     }
 
-    function amountIsValid(uint256 newOperationAmount, string memory _tokenSymbol) private view returns (bool){
+    function bridgeAmountIsValid(uint256 newOperationAmount, string memory _tokenSymbol) private view returns (bool){
         bytes32 balanceKey = _generateHashId(msg.sender, _tokenSymbol, block.chainid);
         UserBalance memory userBalance = balanceKeyMap[balanceKey];
         if (newOperationAmount==0 || newOperationAmount > userBalance.tokenBalance) {
