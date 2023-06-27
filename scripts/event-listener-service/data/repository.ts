@@ -1,12 +1,12 @@
 import { getConnection } from 'typeorm';
-import { TokensBurnt} from './entity/TokensBurnt';
-import { TokensLocked} from './entity/TokensLocked';
-import { TokensReleased} from './entity/TokensReleased';
-import { TokensMinted} from './entity/TokensMinted';
-import { TransferRequest} from './entity/TransferRequest';
-import {Token} from "./entity/Token";
-import {AppDataSource} from "../data-source";
-import {EventNotFound} from './../../utils/exceptions/EventNotFound'
+import { TokensBurnt} from '../../entity/TokensBurnt';
+import { TokensLocked} from '../../entity/TokensLocked';
+import { TokensReleased} from '../../entity/TokensReleased';
+import { TokensMinted} from '../../entity/TokensMinted';
+import { TransferRequest} from '../../entity/TransferRequest';
+import {Token} from "../../entity/Token";
+import {AppDataSource} from "./data-source";
+import {EventNotFound} from '../../utils/exceptions/EventNotFound'
 
 export async function applyDBChanges() {
     try {

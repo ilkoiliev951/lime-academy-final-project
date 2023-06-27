@@ -5,9 +5,9 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT;
+const port = process.env.MAIN_API_PORT;
 
-const dataRepository = require('./data/repository/repository')
+const dataRepository = require('./data/repository')
 const validator  = require('./utils/validator')
 
 app.get('/api/bridge/fetch-locked', (req:Request, res:Response) => {

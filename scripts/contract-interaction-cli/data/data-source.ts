@@ -10,7 +10,7 @@ export const AppDataSource = new DataSource({
     database: "bridge",
     synchronize: true,
     logging: true,
-    entities: ['./data/entity/*.ts'],
+    entities: ['./../../entity/*.ts'],
     subscribers: [],
     migrations: [],
 })

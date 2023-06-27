@@ -7,7 +7,7 @@ export const AppDataSource = new DataSource({
     port: 5432,
     username: "developer",
     password: "developer",
-    database: "bridge-db",
+    database: "bridge",
     synchronize: true,
     logging: true,
     entities: ['./../../entity/*.ts'],

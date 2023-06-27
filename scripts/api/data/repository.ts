@@ -39,15 +39,17 @@ export async function fetchBridgedTokensByWallet(address: string): Promise<any[]
     }
 }
 
-export async function fetchAllBridgedTokenAmounts(): Promise<any[]> {
-    const connection = getConnection();
-    const queryRunner = connection.createQueryRunner();
+//TODO: refactor the function
 
-    try {
-        await queryRunner.connect();
-        const results = await queryRunner.query('SELECT * FROM transfer_request');
-        return results;
-    } finally {
-        await queryRunner.release();
-    }
-}
+// export async function fetchAllBridgedTokenAmounts(): Promise<any[]> {
+//     const connection = getConnection();
+//     const queryRunner = connection.createQueryRunner();
+//
+//     try {
+//         await queryRunner.connect();
+//         const results = await queryRunner.query('SELECT * FROM transfer_request');
+//         return results;
+//     } finally {
+//         await queryRunner.release();
+//     }
+//}

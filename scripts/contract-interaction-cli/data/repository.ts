@@ -1,4 +1,4 @@
-import {AppDataSource} from "../data-source";
+import {AppDataSource} from "./data-source";
 
 export async function fetchLockedTokenEventsByAddress(address: string): Promise<any[]> {
     try {

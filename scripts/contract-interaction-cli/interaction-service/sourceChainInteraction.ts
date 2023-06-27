@@ -2,7 +2,7 @@ import {BigNumber} from 'ethers';
 const validator = require('./validatorInteraction')
 const config = require('./../../../config.json')
 const constants = require('./../utils/constants')
-const signatureGenerator = require('./../../utils/permitSignatureGenerator')
+const signatureGenerator = require('../../utils/helpers/permitSignatureGenerator')
 const interactionUtils = require('./../utils/contractInteractionUtils')
 const contractAddress = config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE;
 const provider = interactionUtils.getProvider(config.PROJECT_SETTINGS.isSourceLocal)

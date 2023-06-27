@@ -1,16 +1,16 @@
 import process from "process";
-import secrets from "../../../secrets.json";
-import {HARDHAT_URL, SOURCE_NETWORK_TYPE, TARGET_NETWORK_TYPE} from "../constants";
-import {Token} from "./entity/Token";
-import {TokensMinted} from "./entity/TokensMinted";
-import {TokensBurnt} from "./entity/TokensBurnt";
-import {TokensLocked} from "./entity/TokensLocked";
-import {TokensReleased} from "./entity/TokensReleased";
+import secrets from "../../secrets.json";
+import {HARDHAT_URL, SOURCE_NETWORK_TYPE, TARGET_NETWORK_TYPE} from "./utils/constants";
+import {Token} from "../entity/Token";
+import {TokensMinted} from "../entity/TokensMinted";
+import {TokensBurnt} from "../entity/TokensBurnt";
+import {TokensLocked} from "../entity/TokensLocked";
+import {TokensReleased} from "../entity/TokensReleased";
 
 const {ethers} = require('ethers');
-const config = require('./../../../config.json')
-const bridge = require("./../../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
-const repository = require('./repository')
+const config = require('../../config.json')
+const bridge = require("../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
+const repository = require('./data/repository')
 
 const targetProvider = new ethers.providers.WebSocketProvider('wss://sepolia-testnet-url');
 const contractTarget = getContract(TARGET_NETWORK_TYPE, targetProvider);
@@ -67,13 +67,11 @@ async function registerSourceNetworkEventListeners() {
 }
 
 async function readBlocksOnSourceFrom (block: number) {
-    // verify, that the transaction is complete on the block
 
 }
 
 async function readBlocksOnTargetFrom (block: number) {
     // verify, that the transaction is complete on the block
-
 }
 
 function getProvider(networkType) {

@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import {BigNumber, TypedDataDomain} from "ethers";
 
 const hre = require("hardhat")
-const sigGenerator = require("./../../scripts/utils/permitSignatureGenerator")
+const sigGenerator = require("../../scripts/utils/helpers/permitSignatureGenerator")
 const ETH_IN_WEI: BigNumber = BigNumber.from('1000000000000000000');
 
 require("@nomicfoundation/hardhat-chai-matchers")
