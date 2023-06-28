@@ -46,6 +46,7 @@ function sendValidatorRequest(requestBody: any, apiEndpoint: string) {
         json: true,
         body: requestBody
     }, function (error, response, body){
+        // if (response.)
         console.log(response);
     });
 }

@@ -15,9 +15,8 @@ export async function validateNewToken(tokenSymbol, tokenName): Promise<boolean>
 }
 
 export async function validateMint(tokenSymbol, tokenAddress, amount, userAddress) {
-    // validate that a lock has occured and it is not claimed
-    // validate the amount to be less or equal the balance that has been locked
-
+    // validate that user balance on source is >=
+    // validate
 }
 
 export async function validateBurn(tokenSymbol, tokenAddress, amount, userAddress) {

@@ -1,7 +1,7 @@
 import { EVMBridge } from "./../../typechain-types/contracts/EVMBridge";
 import { expect,} from "chai";
 import { ethers } from "hardhat";
-import {BigNumber, TypedDataDomain} from "ethers";
+import {BigNumber} from "ethers";
 
 const hre = require("hardhat")
 const sigGenerator = require("../../scripts/utils/helpers/permitSignatureGenerator")
@@ -85,7 +85,10 @@ describe("EVM Token Bridge", function () {
         const testUserAddress = signer[0].address
         const wrappedTokenAddress = await bridge.connect(testUserAddress).tokens('WTT');
 
-        const testGenericERCContract = await ethers.getContractAt(
+        const updateTx = await bridge.updateUserBridgeBalance(testUserAddress, ETH_IN_WEI, 0, "WTT");
+        await updateTx.wait()
+
+        const testWrappedERCContract = await ethers.getContractAt(
             "WrappedERC20",
             wrappedTokenAddress
         );
@@ -98,10 +101,27 @@ describe("EVM Token Bridge", function () {
             ETH_IN_WEI);
 
         await transaction.wait();
-        const userBalanceAfterMint = await testGenericERCContract.balanceOf(testUserAddress);
+        const userBalanceAfterMint = await testWrappedERCContract.balanceOf(testUserAddress);
 
         await expect(transaction).emit(bridge, "TokenAmountMinted")
         expect(userBalanceAfterMint.toString()).to.be.equal('1000000000000000000')
+    });
+
+    it("Should revert when trying to exceed max mint amount", async function () {
+        const signer = await ethers.getSigners();
+        const testUserAddress = signer[0].address
+        const wrappedTokenAddress = await bridge.tokens('WTT');
+
+        const updateTx = await bridge.updateUserBridgeBalance(testUserAddress, 10000, 0, "WTT");
+        await updateTx.wait()
+
+        await expect(
+            bridge.mint(
+                "WTT",
+                "'Wrapped Test Token'",
+                wrappedTokenAddress,
+                testUserAddress,
+                20000)).to.be.revertedWith('Requested mint amount exceeds locked source amount');
     });
 
     it("Should revert when trying to mint token that hasn't been created on target", async function () {
@@ -189,6 +209,8 @@ describe("EVM Token Bridge", function () {
             genericTokenAddress
         );
 
+        await bridge.updateUserBridgeBalance(userAddress,20000 ,0, "GTT");
+
         // Mint some tokens for the user
         const mintTx = await bridge.mint(
             "GTT",
@@ -199,7 +221,6 @@ describe("EVM Token Bridge", function () {
         await mintTx.wait()
 
         const userBalanceBeforeLock = await testGenericERCContract.balanceOf(userAddress)
-
         // Generate permit data
         const deadline = ethers.constants.MaxUint256;
         const spender = bridge.address;
@@ -425,16 +446,19 @@ describe("EVM Token Bridge", function () {
     it("Should burn token amount with permit", async function () {
         // Fetch needed addresses
         const signers = await ethers.getSigners();
-        const userAddress = await signers[1].getAddress();
+        const userAddress = await signers[9].getAddress();
         const wrappedTokenAddress = await bridge.tokens('WTT');
-        const testGenericERCContract = await ethers.getContractAt(
+        const testWrappedERCContract = await ethers.getContractAt(
             "WrappedERC20",
             wrappedTokenAddress
         );
 
+        const updateTx =  await bridge.updateUserBridgeBalance(userAddress,1000 , 0, 'WTT');
+        await updateTx.wait()
+
         // Mint some tokens for the user
-        const mintTx = await bridge.mint(
-            "WTT",
+        const mintTx = await bridge.connect(signers[9]).mint(
+            'WTT',
             "Wrapped Test Token",
             wrappedTokenAddress,
             userAddress,
@@ -442,21 +466,24 @@ describe("EVM Token Bridge", function () {
 
         await mintTx.wait()
 
+        const updateTx1 =  await bridge.updateUserBridgeBalance(userAddress,0,1000, 'WTT');
+        await updateTx1.wait()
+
         // Generate permit data
         const deadline = ethers.constants.MaxUint256;
         const spender = bridge.address;
         const value = 100;
 
         const [nonce, name, version] = await Promise.all([
-            testGenericERCContract.nonces(userAddress),
-            testGenericERCContract.name(),
+            testWrappedERCContract.nonces(userAddress),
+            testWrappedERCContract.name(),
             "1"
         ]);
 
         const chainId = BigNumber.from(31337);
 
         const { v, r, s } = await sigGenerator.generateERC20PermitSignature(
-            signers[1],
+            signers[9],
             name,
             version,
             chainId,
@@ -467,8 +494,8 @@ describe("EVM Token Bridge", function () {
             deadline,
             value
         )
-        const burnTx = await bridge.burnWithPermit(
-            "WTT",
+        const burnTx = await bridge.connect(signers[9]).burnWithPermit(
+            'WTT',
             wrappedTokenAddress,
             userAddress,
             value,
@@ -481,10 +508,62 @@ describe("EVM Token Bridge", function () {
         // Assert that event is emitted
         await expect(burnTx).to.emit(bridge, 'TokenAmountBurned')
 
-        const userBalanceAfterBurn = await testGenericERCContract.balanceOf(userAddress)
+        const userBalanceAfterBurn = await testWrappedERCContract.balanceOf(userAddress)
         const after = Number(userBalanceAfterBurn.toString())
         // Assert that funds are burnt from user wallet
         expect(after).to.be.equal(900)
+    });
+
+    it("Should revert when trying to exceed max burn amount", async function () {
+        // Fetch needed addresses
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[9].getAddress();
+        const wrappedTokenAddress = await bridge.tokens('WTT');
+        const testWrappedERCContract = await ethers.getContractAt(
+            "WrappedERC20",
+            wrappedTokenAddress
+        );
+
+        const updateTx =  await bridge.updateUserBridgeBalance(userAddress,0, 10000, 'WTT');
+        await updateTx.wait()
+
+        // Generate permit data
+        const deadline = ethers.constants.MaxUint256;
+        const spender = bridge.address;
+        const value = 20000;
+
+        const [nonce, name, version] = await Promise.all([
+            testWrappedERCContract.nonces(userAddress),
+            testWrappedERCContract.name(),
+            "1"
+        ]);
+
+        const chainId = BigNumber.from(31337);
+
+        const { v, r, s } = await sigGenerator.generateERC20PermitSignature(
+            signers[9],
+            name,
+            version,
+            chainId,
+            wrappedTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+
+        // Assert that event is emitted
+        await expect(bridge.burnWithPermit(
+            "WTT",
+            wrappedTokenAddress,
+            userAddress,
+            value,
+            deadline,
+            v,
+            r,
+            s)).to.be.revertedWith('Requested burn amount exceeds minted target amount')
+
     });
 
     it("Should revert when burning token with invalid symbol", async function () {
@@ -613,6 +692,9 @@ describe("EVM Token Bridge", function () {
             genericTokenAddress
         );
 
+        const updateTx1 =  await bridge.updateUserBridgeBalance(userAddress,1000,0, 'GTT');
+        await updateTx1.wait()
+
         const releaseTx = await bridge.connect(addr3).release(
             100,
             genericTokenAddress,
@@ -628,7 +710,27 @@ describe("EVM Token Bridge", function () {
         expect(Number(userBalanceAfterRelease.toString())).to.be.equal(100)
     });
 
-    it("Should revert when trying to release ", async function () {
+    it("Should revert when trying to exceed max release amount", async function () {
+        // Fetch needed addresses
+        const genericTokenAddress = await bridge.tokens('GTT');
+        const [owner, addr3] = await ethers.getSigners();
+        const userAddress = addr3.address
+        const testGenericERCContract = await ethers.getContractAt(
+            "GenericERC20",
+            genericTokenAddress
+        );
+
+        const updateTx1 =  await bridge.updateUserBridgeBalance(userAddress,10000,0, 'GTT');
+        await updateTx1.wait()
+
+        await expect(bridge.release(
+            30000,
+            genericTokenAddress,
+            "GTT"
+        )).to.be.revertedWith('Requested release amount exceeds burned target amount')
+    });
+
+    it("Should revert when trying to release token with invalid symbol", async function () {
         // Fetch needed addresses
         const genericTokenAddress = await bridge.tokens('GTT');
 
@@ -655,6 +757,9 @@ describe("EVM Token Bridge", function () {
         const testUserAddress = addr7.address
         const wrappedTokenAddress = await bridge.connect(testUserAddress).tokens('WTT');
 
+        const updateTx1 =  await bridge.updateUserBridgeBalance(testUserAddress, 1000, 0, 'WTT');
+        await updateTx1.wait()
+
         await expect(
             bridge.connect(addr7).mint(
                 "WTT",
@@ -662,5 +767,24 @@ describe("EVM Token Bridge", function () {
                 wrappedTokenAddress,
                 testUserAddress,
                 100)).to.emit(bridge, 'TokenAmountMinted')
+    });
+
+    // Update user bridge balance
+
+    it("Should revert when trying to update balance from non-owner account", async function () {
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[7].getAddress();
+
+        await expect(bridge.connect(signers[7]).updateUserBridgeBalance(userAddress, 100, 200, 'GTT'))
+            .to.be.revertedWith("Ownable: caller is not the owner");
+
+    });
+
+    it("Should revert when trying to update balance with invalid token symbol", async function () {
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[7].getAddress();
+
+        await expect(bridge.updateUserBridgeBalance(userAddress, 100, 200, ''))
+            .to.be.revertedWithCustomError(bridge, 'InvalidStringInput');
     });
 });

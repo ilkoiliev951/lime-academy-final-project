@@ -19,10 +19,11 @@ contract EVMBridge is Ownable, ReentrancyGuard {
 
     constructor() ReentrancyGuard() {}
 
-    struct UserBalance {
+    struct UserBalance{
         string tokenSymbol;
         address tokenAddress;
-        uint256 tokenBalance;
+        uint256 tokenBalanceSource;
+        uint256 tokenBalanceTarget;
         address userAddress;
     }
 
@@ -120,7 +121,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     }
 
     function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external nonReentrant() isValidAmountInput(_amount) isValidString(_tokenSymbol) {
-        require(bridgeAmountIsValid(_amount, _tokenSymbol) == true);
+        require(bridgeAmountIsValid(_amount, _tokenSymbol, "release") == true);
 
         address user = msg.sender;
         IERC20(_tokenAddress).transfer(user, _amount);
@@ -137,12 +138,11 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     isValidString(_tokenName)
     isValidString(_tokenSymbol)
     isValidAmountInput(_amount) {
-        require(bridgeAmountIsValid(_amount, _tokenSymbol) == true);
-
         if (tokens[_tokenSymbol] == address(0)) {
             revert TokenDoesntExist();
         }
 
+        require(bridgeAmountIsValid(_amount, _tokenSymbol, "mint") == true);
         WrappedERC20(_tokenAddress).mint(_toUser, _amount);
 
         emit TokenAmountMinted(
@@ -174,7 +174,6 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     }
 
     function burnWithPermit(
-        string memory userBalanceHash,
         string memory _tokenSymbol,
         address _tokenAddress,
         address _from,
@@ -190,7 +189,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     isValidAmountInput(_amount)
     returns (bool)
     {
-        require(bridgeAmountIsValid(_amount, _tokenSymbol) == true);
+        require(bridgeAmountIsValid(_amount, _tokenSymbol, "burn") == true);
 
         IERC20Permit(_tokenAddress).permit(
             _from,
@@ -213,34 +212,41 @@ contract EVMBridge is Ownable, ReentrancyGuard {
     outside of the CLI context and the database cannot act as a validator.
     By updating the bridge balance only after interaction with the CLI,
     we restrict users to only interact with the bridge through our system.
+    Even though a wrong amount can still be requested this way, it is not
+    possible to exceed the minted/burned/locked amounts.
     */
-    function updateUserBridgeBalance(address _user, uint256 _newBalance, string memory _tokenSymbol) external onlyOwner()
+    function updateUserBridgeBalance(address _user, uint256 _newSourceBalance, uint256 _newTargetBalance,string memory _tokenSymbol) external onlyOwner()
     isValidString(_tokenSymbol)
-    isValidAmountInput(_newBalance)
     returns (bool) {
-        // check struct for null
         address tokenAddress = tokens[_tokenSymbol];
         bytes32 balanceKey = _generateHashId(_user, _tokenSymbol, block.chainid);
         if (balanceKeyMap[balanceKey].userAddress == address(0)) {
-            balanceKeyMap[balanceKey] = UserBalance(_tokenSymbol, tokenAddress, _newBalance, _user);
+            balanceKeyMap[balanceKey] = UserBalance(_tokenSymbol, tokenAddress, _newSourceBalance, _newTargetBalance, _user);
         } else {
-            balanceKeyMap[balanceKey].tokenBalance = _newBalance;
+            balanceKeyMap[balanceKey].tokenBalanceSource = _newSourceBalance;
+            balanceKeyMap[balanceKey].tokenBalanceTarget = _newTargetBalance;
         }
 
         emit UserBridgeBalanceUpdated(_tokenSymbol, tokenAddress, _user, block.chainid, block.timestamp);
         return true;
     }
 
-    function bridgeAmountIsValid(uint256 newOperationAmount, string memory _tokenSymbol) private view returns (bool){
+    // An exploit is still possible after burn
+    function bridgeAmountIsValid(uint256 newOperationAmount, string memory _tokenSymbol, string memory operation) private view returns (bool){
         bytes32 balanceKey = _generateHashId(msg.sender, _tokenSymbol, block.chainid);
         UserBalance memory userBalance = balanceKeyMap[balanceKey];
-        if (newOperationAmount==0 || newOperationAmount > userBalance.tokenBalance) {
-            revert InvalidAmount();
+        if (compareStrings(operation, "burn")) {
+            require(newOperationAmount <= userBalance.tokenBalanceTarget, "Requested burn amount exceeds minted target amount");
+        } else if (compareStrings(operation, "mint")) {
+            require(newOperationAmount <= userBalance.tokenBalanceSource, "Requested mint amount exceeds locked source amount");
+        } else if (compareStrings(operation, "release")) {
+            require(newOperationAmount <= userBalance.tokenBalanceSource, "Requested release amount exceeds burned target amount");
         }
+
         return true;
     }
 
-    function compareStrings(string memory val1, string memory val2) public pure returns (bool) {
+    function compareStrings(string memory val1, string memory val2) private pure returns (bool) {
         return keccak256(abi.encodePacked(val1)) == keccak256(abi.encodePacked(val2));
     }
 
