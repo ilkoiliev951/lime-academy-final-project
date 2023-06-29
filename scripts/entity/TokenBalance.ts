@@ -1,5 +1,4 @@
-import {JoinColumn, OneToOne, Column, Entity, PrimaryGeneratedColumn, ManyToOne} from "typeorm"
-import {Token} from "./Token";
+import {Column, Entity, PrimaryGeneratedColumn, ManyToOne} from "typeorm"
 import {User} from "./User";
 
 @Entity('token_balance')
@@ -10,9 +9,8 @@ export class TokenBalance{
     @Column()
     userId: number
 
-    @OneToOne(() => Token)
-    @JoinColumn()
-    token: Token
+    @Column
+    tokenSymbol: string
 
     @ManyToOne(() => User, user => user.balances)
     user: User;
@@ -26,9 +24,9 @@ export class TokenBalance{
     @Column()
     transactionVerified?: boolean
 
-    constructor(userId: number, token: Token, userBridgeBalance: string, chainId: string) {
+    constructor(userId: number, tokenSymbol, userBridgeBalance: string, chainId: string) {
         this.userId = userId;
-        this.token = token;
+        this.tokenSymbol = tokenSymbol;
         this.userBridgeBalance = userBridgeBalance;
         this.chainId = chainId;
     }

@@ -10,9 +10,9 @@ task("deploy-custom", "Deploys a custom contract")
         const bridgeContractFactory = await ethers.getContractFactory("EVMBridge");
         const bridge = await bridgeContractFactory.deploy();
         await bridge.deployed();
-        console.log(`The Bridge Contract was deployed to ${bridge.address}`);
+        console.log(`EVMBridge Contract was deployed to ${bridge.address}`);
 
-        await run("print-custom-deployment-info", buildSubtaskArgs(bridge, "EVMBridge"));
+        await run("print-custom-deployment-info", await buildSubtaskArgs(bridge, "EVMBridge", network.name));
     });
 
 subtask("print-custom-deployment-info", "Prints information about the contract after successful deployment.")
@@ -22,13 +22,15 @@ subtask("print-custom-deployment-info", "Prints information about the contract a
         await console.log(`- Contract Address: ${taskArgs.address}`);
         await console.log(`- Transaction Hash: ${taskArgs.hash}`);
         await console.log(`- Deployer Address: ${taskArgs.senderAddress}`);
+        await console.log(`- Network: ${taskArgs.network}`);
     });
 
-async function buildSubtaskArgs (contract: Contract, contractName: string) {
+async function buildSubtaskArgs (contract: Contract, contractName: string, network: string) {
     return {
         name: contractName,
         address: contract.address,
         hash: contract.deployTransaction.hash,
-        senderAddress: contract.deployTransaction.from
+        senderAddress: contract.deployTransaction.from,
+        network: network
     };
 }

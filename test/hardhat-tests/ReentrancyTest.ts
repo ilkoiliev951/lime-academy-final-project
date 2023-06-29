@@ -17,7 +17,34 @@ describe("EVM Token Bridge", function () {
         await bridge.deployed();
     })
 
-    // Reentrancy attack tests
+    it("Should revert when trying reenter mint", async function () {
+        const createTx = await bridge.createToken('Wrapped Test Token', 'WTT', 'wrapped')
+        await createTx.wait();
 
+        const signer = await ethers.getSigners();
+        const testUserAddress = signer[0].address
+        const wrappedTokenAddress = await bridge.connect(testUserAddress).tokens('WTT');
 
+        const updateTx = await bridge.updateUserBridgeBalance(testUserAddress, 1000, 0, "WTT");
+        await updateTx.wait()
+
+        const testWrappedERCContract = await ethers.getContractAt(
+            "WrappedERC20",
+            wrappedTokenAddress
+        );
+
+        await bridge.mint(
+            "WTT",
+            "Wrapped Test Token",
+            wrappedTokenAddress,
+            testUserAddress,
+            1000);
+
+        expect(bridge.mint(
+            "WTT",
+            "Wrapped Test Token",
+            wrappedTokenAddress,
+            testUserAddress,
+            1000)).to.be.revertedWith('sdfdd');
+    });
 });

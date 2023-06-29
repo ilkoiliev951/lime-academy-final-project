@@ -2,7 +2,7 @@ import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
 import secrets from './secrets.json';
-import "./scripts/deployment/customDeploy";
+import "./scripts/custom-scripts/customDeploy";
 import "@nomicfoundation/hardhat-toolbox";
 
 const config: HardhatUserConfig = {
@@ -29,7 +29,7 @@ const config: HardhatUserConfig = {
     development: {
       url: "http://127.0.0.1:8545",
       allowUnlimitedContractSize: true,
-      chainId: 13337
+      chainId: 31337
     },
   },
   etherscan: {
