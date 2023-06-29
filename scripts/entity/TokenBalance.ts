@@ -9,7 +9,7 @@ export class TokenBalance{
     @Column()
     userId: number
 
-    @Column
+    @Column()
     tokenSymbol: string
 
     @ManyToOne(() => User, user => user.balances)
@@ -24,7 +24,7 @@ export class TokenBalance{
     @Column()
     transactionVerified?: boolean
 
-    constructor(userId: number, tokenSymbol, userBridgeBalance: string, chainId: string) {
+    constructor(userId: number, tokenSymbol: string, userBridgeBalance: string, chainId: string) {
         this.userId = userId;
         this.tokenSymbol = tokenSymbol;
         this.userBridgeBalance = userBridgeBalance;

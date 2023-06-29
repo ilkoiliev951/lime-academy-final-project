@@ -1,21 +1,13 @@
 import express, { Request, Response } from 'express';
 
+const dotenv = require('dotenv');
+dotenv.config();
+
 const app = express();
 const port = process.env.VALIDATOR_API_PORT;
-const dataSource = require('./data/dataSource')
 const validator = require('./data/dbValidator')
 
-dataSource
-    .initialize()
-    .then(() => {
-        console.log("Data Source has been initialized!")
-    })
-    .catch((err) => {
-        console.error("Error during Data Source initialization:", err)
-    })
-
-
- app.post('/api/validator/validate-new-token', async (req:Request, res:Response) => {
+app.post('/api/validator/validate-new-token', async (req:Request, res:Response) => {
     const newTokenRequestIsValid = await validator.validateNewToken(req.body.tokenSymbol, req.body.tokenName);
     if (newTokenRequestIsValid) {
         res.sendStatus(200);
@@ -61,5 +53,5 @@ app.post('/api/validator/update-balance', async (req:Request, res:Response) => {
 });
 
 app.listen(port, () => {
-    console.log(`[server]: Server is running at http://localhost:${port}`);
+    console.log(`[server]: Validator API Server is running at http://localhost:${port}`);
 });

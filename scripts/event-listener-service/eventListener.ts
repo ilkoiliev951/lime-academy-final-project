@@ -66,12 +66,27 @@ async function registerSourceNetworkEventListeners() {
     });
 }
 
-async function readBlocksOnSourceFrom (block: number) {
-
+async function readBlocksOnSourceFrom (blockNumber: number) {
+    readBlocksOnSourceFrom(blockNumber)
+        .catch((error) => {
+            console.error('Error:', error);
+        });
 }
 
 async function readBlocksOnTargetFrom (block: number) {
     // verify, that the transaction is complete on the block
+}
+
+async function readBlocks(startBlockNumber: number): Promise<void> {
+    const provider = new ethers.providers.JsonRpcProvider('https://sepolia-testnet-url'); // Replace 'https://sepolia-testnet-url' with the actual Sepolia testnet URL
+
+    const currentBlockNumber = await provider.getBlockNumber();
+
+    for (let blockNumber = startBlockNumber; blockNumber <= currentBlockNumber; blockNumber++) {
+        const block = await provider.getBlock(blockNumber);
+        console.log(block);
+        // Process or extract data from the block as needed
+    }
 }
 
 function getProvider(networkType) {

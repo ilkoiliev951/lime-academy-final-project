@@ -6,27 +6,15 @@ cd ../docker
 docker-compose up -d
 echo "Started PSQL DB Container contract deployment"
 
-## start the hardhat local node
 cd ../
-npx hardhat node &
-
-# wait for the hardhat node to boot up
-sleep 10
-echo "Started local hardhat node"
-
-##
-cd bin
-echo "Starting contract deployment"
-sudo chmod 755 deploy.sh
-./deploy.sh
-
-cd ../
-
-## start the api
-npx ts-node scripts/api/server.ts
+## start the main api
+npx ts-node scripts/api/server.ts &
+echo "Started Main API Service"
 
 ## start the validator api
-npx ts-node scripts/validator-service/server.ts
+npx ts-node scripts/validator-service/server.ts &
+echo "Started Validator API Service"
 
 ## start the event listener
-npx ts-node scripts/event-listener-service/eventListener.ts
+npx ts-node scripts/event-listener-service/eventListener.ts &
+echo "Started Event Listener Service"

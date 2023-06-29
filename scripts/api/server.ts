@@ -36,5 +36,5 @@ app.get('/api/bridge/fetch-all-bridged', (req:Request, res:Response) => {
 });
 
 app.listen(port, () => {
-    console.log(`[server]: Server is running at http://localhost:${port}`);
+    console.log(`[server]: Main API Service is running at http://localhost:${port}`);
 });

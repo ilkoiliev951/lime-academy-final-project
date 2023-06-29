@@ -6,7 +6,7 @@ import {BigNumber} from "ethers";
 import {TokensBurnt} from "../../entity/TokensBurnt";
 import {TokensLocked} from "../../entity/TokensLocked";
 
-export async function validateNewToken(tokenSymbol, tokenName): Promise<boolean> {
+export async function validateNewToken(tokenSymbol: string, tokenName: string): Promise<boolean> {
     const connection = getConnection();
     const tokenRepository = connection.getRepository(Token);
 
@@ -19,7 +19,7 @@ export async function validateNewToken(tokenSymbol, tokenName): Promise<boolean>
     return results.length === 0;
 }
 
-export async function validateMint(tokenSymbol, tokenSymbolTarget, tokenAddress, amount, userAddress) {
+export async function validateMint(tokenSymbol: string, tokenSymbolTarget: string, tokenAddress: string, amount: string, userAddress: string) {
     // validate that user balance on source is enough for the transaction
     const userBalance: BigNumber = await getUserBalanceBySymbol(userAddress, tokenSymbol);
     if (userBalance.lt(amount)) {
@@ -28,13 +28,13 @@ export async function validateMint(tokenSymbol, tokenSymbolTarget, tokenAddress,
     }
 
     const userLockEvents = await getActiveLockEvent(userAddress, tokenSymbol, amount.toString())
-    if (userLockEvents.length > 0) {
+    if (userLockEvents) {
         return true;
     }
     return false;
 }
 
-export async function validateBurn(tokenSymbol, tokenAddress, amount, userAddress) {
+export async function validateBurn(tokenSymbol: string, tokenAddress: string, amount: string, userAddress: string) {
     // validate that user balance on source is enough for the transaction
     const userBalance: BigNumber = await getUserBalanceBySymbol(userAddress, tokenSymbol);
     if (userBalance.lt(amount)) {
@@ -44,7 +44,7 @@ export async function validateBurn(tokenSymbol, tokenAddress, amount, userAddres
     return true;
 }
 
-export async function validateRelease(tokenSymbol, tokenAddress, amount, userAddress) {
+export async function validateRelease(tokenSymbol: string, tokenAddress: string, amount: string, userAddress: string) {
     // validate that user balance on source is enough for the transaction
     const userBalance: BigNumber = await getUserBalanceBySymbol(userAddress, tokenSymbol);
     if (userBalance.lt(amount)) {
@@ -53,7 +53,7 @@ export async function validateRelease(tokenSymbol, tokenAddress, amount, userAdd
     }
 
     const userLockEvents = await getActiveBurnEvent(userAddress, tokenSymbol, amount.toString())
-    if (userLockEvents.length > 0) {
+    if (userLockEvents) {
         return true;
     }
     return false;
@@ -107,8 +107,7 @@ async function getActiveBurnEvent(address: string, tokenSymbol: string, amount: 
     throw new EntityNotFoundException('User with the given address was not found.')
 }
 
-export async function updateUserBalance(tokenSymbol, amount,  userAddress) {
-
+export async function updateUserBalance(tokenSymbol: string, amount: string,  userAddress: string) {
 }
 
 
