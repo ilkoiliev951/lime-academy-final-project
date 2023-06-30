@@ -254,4 +254,28 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         string memory balanceKeyInput = string.concat(Strings.toHexString(uint256(uint160(_userAddress)), 20), _tokenSymbol, Strings.toString(_chainId));
         return keccak256(abi.encodePacked(balanceKeyInput));
     }
+
+    function mintInitialGenericTokenAmount(
+        string memory _tokenSymbol,
+        address _toUser,
+        address _tokenAddress,
+        uint256 _amount) external
+    onlyOwner()
+    isValidString(_tokenSymbol)
+    isValidAmountInput(_amount) {
+        if (tokens[_tokenSymbol] == address(0)) {
+            revert TokenDoesntExist();
+        }
+
+        GenericERC20(_tokenAddress).mint(_toUser, _amount);
+
+        emit TokenAmountMinted(
+            _toUser,
+            _tokenSymbol,
+            _tokenAddress,
+            _amount,
+            block.chainid,
+            block.timestamp
+        );
+    }
 }

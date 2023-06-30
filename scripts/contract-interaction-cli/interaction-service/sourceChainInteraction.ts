@@ -17,7 +17,7 @@ export async function lockWithPermit(
     await transferFeeOnSource(privateKey, amount,tokenAddress);
 
     const wallet =  interactionUtils.getWallet(privateKey, provider);
-    const userAddressPub = wallet.getAddress();
+    const userAddressPub = wallet.address;
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
     const erc20Contract = interactionUtils.getGenericERC20Contract(wallet, tokenAddress);
 

@@ -9,54 +9,56 @@ const process = require('process');
 const ethers = require('ethers');
 
 export async function main() {
-    let mainCommand: string = process.argv[2];
-    let userPrivateKey: string = process.argv[3];
 
-    if (isNullUndefined(mainCommand)) {
-        throw new InvalidCommandInputException("Invalid main command. Call the script with the help argument to list available options.")
-    }
-
-    if (isNullUndefined(userPrivateKey) || !isValidPrivateKey(userPrivateKey)) {
-        throw new InvalidCommandInputException("Invalid wallet private key.")
-    }
-
-    switch (mainCommand) {
-        case COMMANDS.LOCK:
-            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.LOCK)) {
-                let tokenSymbol  = process.argv[4];
-                let tokenAddress = process.argv[5];
-                let amount = BigNumber.from(process.argv[6]);
-                await lockWithPermit(tokenSymbol, tokenAddress, amount, userPrivateKey)
-            }
-            break;
-        case COMMANDS.CLAIM:
-            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.CLAIM)) {
-                let tokenSymbol = process.argv[4];
-                let tokenAddress = process.argv[5];
-                let amount = BigNumber.from(process.argv[6])
-                await mint(tokenSymbol, tokenAddress, amount,  userPrivateKey)
-            }
-            break;
-        case COMMANDS.BURN:
-            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.BURN)) {
-                let tokenSymbol = process.argv[4];
-                let tokenAddress = process.argv[5];
-                let amount =  BigNumber.from(process.argv[5]);
-                await burnWithPermit(tokenSymbol,tokenAddress, amount, userPrivateKey)
-            }
-            break;
-        case COMMANDS.RELEASE:
-            if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.RELEASE)) {
-                let tokenSymbol = process.argv[4];
-                let tokenAddress = process.argv[5];
-                let amount = BigNumber.from(process.argv[6]);
-                await release(tokenAddress, tokenSymbol, amount, userPrivateKey)
-            }
-            break;
-        default:
-            printHelpOptions();
-            return;
-    }
+    await lockWithPermit('GTT', '0x655cF23b21D8F9a51fBB3131274d9E4c0D7b17F7', BigNumber.from(1000), '80fbb29bb63fe54944ad0a011935885bafa802eca521d4708c121c1968cbdb7a')
+    // let mainCommand: string = process.argv[2];
+    // let userPrivateKey: string = process.argv[3];
+    //
+    // if (isNullUndefined(mainCommand)) {
+    //     throw new InvalidCommandInputException("Invalid main command. Call the script with the help argument to list available options.")
+    // }
+    //
+    // if (isNullUndefined(userPrivateKey) || !isValidPrivateKey(userPrivateKey)) {
+    //     throw new InvalidCommandInputException("Invalid wallet private key.")
+    // }
+    //
+    // switch (mainCommand) {
+    //     case COMMANDS.LOCK:
+    //         if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.LOCK)) {
+    //             let tokenSymbol  = process.argv[4];
+    //             let tokenAddress = process.argv[5];
+    //             let amount = BigNumber.from(process.argv[6]);
+    //             await lockWithPermit(tokenSymbol, tokenAddress, amount, userPrivateKey)
+    //         }
+    //         break;
+    //     case COMMANDS.CLAIM:
+    //         if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.CLAIM)) {
+    //             let tokenSymbol = process.argv[4];
+    //             let tokenAddress = process.argv[5];
+    //             let amount = BigNumber.from(process.argv[6])
+    //             await mint(tokenSymbol, tokenAddress, amount,  userPrivateKey)
+    //         }
+    //         break;
+    //     case COMMANDS.BURN:
+    //         if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.BURN)) {
+    //             let tokenSymbol = process.argv[4];
+    //             let tokenAddress = process.argv[5];
+    //             let amount =  BigNumber.from(process.argv[5]);
+    //             await burnWithPermit(tokenSymbol,tokenAddress, amount, userPrivateKey)
+    //         }
+    //         break;
+    //     case COMMANDS.RELEASE:
+    //         if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.RELEASE)) {
+    //             let tokenSymbol = process.argv[4];
+    //             let tokenAddress = process.argv[5];
+    //             let amount = BigNumber.from(process.argv[6]);
+    //             await release(tokenAddress, tokenSymbol, amount, userPrivateKey)
+    //         }
+    //         break;
+    //     default:
+    //         printHelpOptions();
+    //         return;
+    // }
 }
 
 function isNullUndefined(input: any) {
@@ -81,6 +83,8 @@ function isValidPrivateKey(privateKey: string): boolean {
         return false;
     }
 }
+
+
 
 function printHelpOptions() {
     console.log('=== Available commands === \n')

@@ -9,9 +9,9 @@ export function calculateFee(transactionAmount: BigNumber) {
 }
 
 export async function transferFeeOnSource(privateKey: string, feeAmount: BigNumber, tokenAddress: string) {
-    const provider = interactionUtils.getProvider(true);
-    const wallet = interactionUtils.getWallet(privateKey, provider);
-    const erc20: GenericERC20= interactionUtils.getGenericERC20Contract(wallet, tokenAddress);
+    const provider = await interactionUtils.getProvider(true);
+    const wallet = await interactionUtils.getWallet(privateKey, provider);
+    const erc20: GenericERC20= await interactionUtils.getGenericERC20Contract(wallet, tokenAddress);
 
     try {
         const tx = await erc20.transfer(config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE, feeAmount);
