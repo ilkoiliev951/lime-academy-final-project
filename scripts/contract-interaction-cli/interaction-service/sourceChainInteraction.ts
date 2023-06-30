@@ -1,7 +1,5 @@
 import {BigNumber} from 'ethers';
-import {LOGGER} from "../utils/constants";
 import {transferFeeOnSource} from "../handlers/feeHandler";
-
 const validator = require('./validatorInteraction')
 const config = require('./../../../config.json')
 const constants = require('./../utils/constants')
@@ -9,21 +7,6 @@ const signatureGenerator = require('../../utils/helpers/permitSignatureGenerator
 const interactionUtils = require('./../utils/contractInteractionUtils')
 const contractAddress = config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE;
 const provider = interactionUtils.getProvider(config.PROJECT_SETTINGS.isSourceLocal)
-
-export async function createToken(
-    privateKey: string,
-    tokenName: string,
-    tokenSymbol: string) {
-    await validator.validateNewTokenRequest(tokenSymbol, tokenName);
-
-    const wallet = interactionUtils.getWallet(privateKey, provider);
-    const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
-
-    const createTokenTx = await bridgeContract.createToken(tokenName, tokenSymbol, 'generic');
-    await createTokenTx.wait()
-
-    printTransactionOutput(createTokenTx)
-}
 
 export async function lockWithPermit(
     tokenSymbol: string,

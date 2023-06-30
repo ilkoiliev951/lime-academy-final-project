@@ -21,6 +21,8 @@ const contractSource = getContract(SOURCE_NETWORK_TYPE, sourceProvider)
 const main = async () => {
     // Apply DB schema changes on start up, if any
     await applyDBChanges();
+    // Check for newly created tokens and update the db
+    await
     // Register the event listeners on both contracts
     await registerSourceNetworkEventListeners()
     await registerTargetNetworkEventListeners();
@@ -87,6 +89,15 @@ async function readBlocks(startBlockNumber: number): Promise<void> {
         console.log(block);
         // Process or extract data from the block as needed
     }
+}
+
+function checkForNewTokens () {
+    // make 2 requests on both networks
+
+    // check in db
+
+    // update if needed
+
 }
 
 function getProvider(networkType) {

@@ -22,11 +22,8 @@ export const TARGET_CHAIN_ID = BigNumber.from(11155111);
 
 export const PERMIT_DEADLINE = ethers.constants.MaxUint256;
 
-// Fee is set to be 0.1% of the total transaction amount
-export const BRIDGE_FEE_PERCENTAGE_MULTIPLIER = BigNumber.from('0.001');
-
 // URLs
 export const VALIDATOR_BASE_URL = 'http://localhost:8082/api/validator/';
 
 // Logger
-export const LOGGER = new console.Console(fs.createWriteStream("log/validator_api.log"));
+export const LOGGER = new console.Console(fs.createWriteStream("cli.log"));

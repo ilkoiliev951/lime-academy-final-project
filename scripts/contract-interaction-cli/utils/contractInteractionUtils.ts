@@ -8,26 +8,27 @@ const bridge = require("./../../../artifacts/contracts/EVMBridge.sol/EVMBridge.j
 const genericERC20 = require("../../../artifacts/contracts/GenericERC20.sol/GenericERC20.json");
 const wrappedERC20 = require("../../../artifacts/contracts/WrappedERC20.sol/WrappedERC20.json");
 
-export async function getWallet(privateKey: string, provider) {
+export async function getWallet(privateKey: string, provider:any) {
     return new ethers.Wallet(
         privateKey,
         provider
     );
 }
 
-export async function getProvider(isLocal: boolean) {
-    if (isLocal) {
-        return new ethers.providers.JsonRpcProvider(
-            "http://localhost:8545"
+export async function getProvider(isSource: boolean) {
+    if (isSource) {
+        return new ethers.providers.InfuraProvider(
+            "sepolia",
+            secrets.INFURA_KEY
         );
     }
     return new ethers.providers.InfuraProvider(
-        "sepolia",
+        "goerli",
         secrets.INFURA_KEY
     );
 }
 
-export function getBridgeContract(wallet: Wallet, contractAddress) {
+export function getBridgeContract(wallet: Wallet, contractAddress:any) {
     return new ethers.Contract(
         contractAddress,
         bridge.abi,
@@ -51,7 +52,7 @@ export function getWrappedERC20Contract(wallet: Wallet, tokenContractAddress: st
     );
 }
 
-export async function transactionIsIncludedInBlock (provider, txHash: string) {
+export async function transactionIsIncludedInBlock (provider: any, txHash: string) {
     let included = false;
     let retryCount = 0;
     while (!included || retryCount<4) {
@@ -77,12 +78,12 @@ export async function transactionIsIncludedInBlock (provider, txHash: string) {
     return included;
 }
 
-function sleep(ms) {
+function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function calculatePreTransactionEstimates(amount: BigNumber, tokenSymbol: string, customGasLimit?: number) {
-    const maxGasInEth = calculateApproximateGasPriceInETH(customGasLimit);
+export async function calculatePreTransactionEstimates(amount: BigNumber, tokenSymbol: string, network: string,  customGasLimit?: number) {
+    const maxGasInEth = calculateApproximateGasPriceInETH(network, customGasLimit);
     const bridgeFee = calculateFee(amount);
 
     LOGGER.info('Estimated Bridge Fee: ' + bridgeFee);

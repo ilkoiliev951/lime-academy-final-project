@@ -1,12 +1,11 @@
 import {BigNumber, ethers} from "ethers";
-import {BRIDGE_FEE_PERCENTAGE_MULTIPLIER} from "../utils/constants";
 import {GenericERC20, WrappedERC20} from "../../../typechain-types";
 
 const interactionUtils = require('./../utils/contractInteractionUtils')
 const config = require('./../../../config.json')
 
 export function calculateFee(transactionAmount: BigNumber) {
-    return transactionAmount.mul(BigNumber.from(BRIDGE_FEE_PERCENTAGE_MULTIPLIER))
+    return transactionAmount.div(BigNumber.from(1000))
 }
 
 export async function transferFeeOnSource(privateKey: string, feeAmount: BigNumber, tokenAddress: string) {

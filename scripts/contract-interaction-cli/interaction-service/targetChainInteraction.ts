@@ -8,20 +8,6 @@ const contractAddress = config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET;
 const provider = interactionUtils.getProvider(config.PROJECT_SETTINGS.isTargetLocal)
 const validator = require('./validatorInteraction')
 
-export async function createToken(
-    privateKey: string,
-    tokenName: string,
-    tokenSymbol: string) {
-
-    const wallet = interactionUtils.getWallet(privateKey, provider);
-    const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
-
-    const createTokenTx = await bridgeContract.createToken(tokenName, tokenSymbol, 'wrapped');
-    await createTokenTx.wait()
-
-    printTransactionOutput(createTokenTx)
-}
-
 export async function mint (
     tokenSymbol: string,
     tokenAddress: string,

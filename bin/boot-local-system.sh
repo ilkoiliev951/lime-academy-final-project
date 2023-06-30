@@ -8,7 +8,7 @@ echo "Started PSQL DB Container contract deployment"
 
 cd ../
 ## start the main api
-npx ts-node scripts/api/server.ts &
+# npx ts-node scripts/api/server.ts &
 echo "Started Main API Service"
 
 ## start the validator api

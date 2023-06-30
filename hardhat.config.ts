@@ -2,7 +2,7 @@ import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
 import secrets from './secrets.json';
-import "./scripts/custom-scripts/customDeploy";
+import "./scripts/custom-tasks/customDeploy";
 import "@nomicfoundation/hardhat-toolbox";
 
 const config: HardhatUserConfig = {
