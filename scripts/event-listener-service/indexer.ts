@@ -1,6 +1,6 @@
 import process from "process";
 import secrets from "../../secrets.json";
-import {HARDHAT_URL, SOURCE_NETWORK_TYPE, TARGET_NETWORK_TYPE} from "./utils/constants";
+import {SOURCE_NETWORK_TYPE, TARGET_NETWORK_TYPE} from "./utils/constants";
 import {Token} from "../entity/Token";
 import {TokensMinted} from "../entity/TokensMinted";
 import {TokensBurnt} from "../entity/TokensBurnt";
@@ -12,60 +12,64 @@ const config = require('../../config.json')
 const bridge = require("../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
 const repository = require('./data/repository')
 
-const targetProvider = new ethers.providers.WebSocketProvider('wss://sepolia-testnet-url');
+const targetProvider = getWebSocketProvider(TARGET_NETWORK_TYPE)
 const contractTarget = getContract(TARGET_NETWORK_TYPE, targetProvider);
 
-const sourceProvider = getProvider(SOURCE_NETWORK_TYPE)
+const sourceProvider = getWebSocketProvider(SOURCE_NETWORK_TYPE)
 const contractSource = getContract(SOURCE_NETWORK_TYPE, sourceProvider)
 
 const main = async () => {
     // Apply DB schema changes on start up, if any
-    await applyDBChanges();
+    await repository.applyDBSchemaChanges();
     // Check for newly created tokens and update the db
-    await
+   // await
     // Register the event listeners on both contracts
-    await registerSourceNetworkEventListeners()
+    await registerSourceNetworkEventListeners();
     await registerTargetNetworkEventListeners();
 }
 
-async function registerTargetNetworkEventListeners() {
+async function registerSourceNetworkEventListeners() {
     contractSource.on('NewTokenCreated', (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
         const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString())
         repository.saveNewTokenEvent(token)
     });
 
-    contractSource.on('TokenAmountMinted', (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
-        console.log('Intercepted TokenAmountMinted event')
-        const mintEvent: TokensMinted = new TokensMinted(tokenSymbol, tokenAddress, user, amount, chainId, timestamp);
-        repository.saveMintEvent(mintEvent);
+    contractSource.on('TokenAmountLocked', (event, user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
+        console.log('Intercepted TokenAmountLocked event')
+        const lockEvent: TokensLocked = new TokensLocked(tokenSymbol, tokenAddress, user, amount, chainId.toString(), lockedInContract, false, timestamp, true);
+        repository.saveLockedEvent(lockEvent);
     });
 
-    contractSource.on('TokenAmountBurned', (user, tokenAddress, tokenSymbol, amount, chainId, timestamp) => {
-        console.log('Intercepted TokenAmountBurned event')
-        const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount, chainId, false, timestamp);
-        repository.saveBurntEvent(burntEvent);
+    contractSource.on('TokenAmountReleased', (event, user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
+        console.log('Intercepted TokenAmountReleased event')
+        const releaseEvent: TokensReleased = new TokensReleased(tokenSymbol, tokenAddress, user, amount, chainId.toString(), timestamp)
+        repository.saveReleaseEvent(releaseEvent);
     });
+
+    console.log('Listening on EVM Bridge Source')
 }
 
-async function registerSourceNetworkEventListeners() {
+async function registerTargetNetworkEventListeners() {
     contractTarget.on('NewTokenCreated', (event, tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
         const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'generic', chainId.toString())
         repository.saveNewTokenEvent(token)
     });
 
-    contractTarget.on('TokenAmountLocked', (event, user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
-        console.log('Intercepted TokenAmountLocked event')
-        const lockEvent: TokensLocked = new TokensLocked(tokenSymbol, tokenAddress, user, amount, chainId.toString(), lockedInContract, false, timestamp, true);
-        repository.saveLockedEvent(lockEvent);
+    contractTarget.on('TokenAmountMinted', (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
+        console.log('Intercepted TokenAmountMinted event')
+        console.log('AMOUNT' + amount.toString())
+        const mintEvent: TokensMinted = new TokensMinted(tokenSymbol, tokenAddress, user, amount.toString(), chainId, timestamp);
+        repository.saveMintEvent(mintEvent);
     });
 
-    contractTarget.on('TokenAmountReleased', (event, user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
-        console.log('Intercepted TokenAmountReleased event')
-        const releaseEvent: TokensReleased = new TokensReleased(tokenSymbol, tokenAddress, user, amount, chainId.toString(), timestamp)
-        repository.saveReleaseEvent(releaseEvent);
+    contractTarget.on('TokenAmountBurned', (user, tokenAddress, tokenSymbol, amount, chainId, timestamp) => {
+        console.log('Intercepted TokenAmountBurned event')
+        const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount, chainId, false, timestamp);
+        repository.saveBurntEvent(burntEvent);
     });
+    console.log('Listening on EVM Bridge Source')
 }
 
 async function readBlocksOnSourceFrom (blockNumber: number) {
@@ -91,25 +95,20 @@ async function readBlocks(startBlockNumber: number): Promise<void> {
     }
 }
 
-function checkForNewTokens () {
-    // make 2 requests on both networks
+// function checkForNewTokens () {
+//     // make 2 requests on both networks
+//
+//     // check in db
+//
+//     // update if needed
+//
+// }
 
-    // check in db
-
-    // update if needed
-
-}
-
-function getProvider(networkType) {
+function getWebSocketProvider(networkType) {
     if (networkType === SOURCE_NETWORK_TYPE) {
-        return new ethers.providers.JsonRpcProvider(
-            HARDHAT_URL
-        );
+        return new ethers.providers.WebSocketProvider(secrets.INFURA_SEPOLIA_SOCKET_URL);
     }
-    return new ethers.providers.InfuraProvider(
-        "sepolia",
-        secrets.INFURA_KEY
-    );
+    return new ethers.providers.WebSocketProvider(secrets.INFURA_GOERLI_SOCKET_URL);
 }
 
 function getContract(networkType, provider) {
@@ -117,10 +116,6 @@ function getContract(networkType, provider) {
         return new ethers.Contract(config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE, bridge.abi, provider);
     }
     return new ethers.Contract(config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET, bridge.abi, provider);
-}
-
-async function applyDBChanges () {
-    await repository.applyDBChanges();
 }
 
 main()

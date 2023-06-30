@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
 
-@Entity('block_target')
+@Entity('block_on_target')
 export class BlockOnTarget {
     @PrimaryGeneratedColumn()
     id: number
@@ -10,4 +10,9 @@ export class BlockOnTarget {
 
     @Column()
     timestamp: string
+
+    constructor(lastProcessedBlockId: number, timestamp: string) {
+        this.lastProcessedBlockId = lastProcessedBlockId;
+        this.timestamp = timestamp;
+    }
 }

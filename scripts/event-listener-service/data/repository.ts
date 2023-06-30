@@ -7,7 +7,7 @@ import {Token} from "../../entity/Token";
 import {AppDataSource} from "./data-source";
 import {EventNotFound} from '../../utils/exceptions/EventNotFound'
 
-export async function applyDBChanges() {
+export async function applyDBSchemaChanges() {
     try {
        await AppDataSource.connect()
     } catch (e) {
@@ -16,17 +16,14 @@ export async function applyDBChanges() {
 }
 
 export async function saveNewTokenEvent(newTokenEvent: Token): Promise<Token> {
-    const connection = getConnection();
-    const userRepository = connection.getRepository(Token);
+    const userRepository = AppDataSource.getRepository(Token);
 
-    return await userRepository.save(Token);
+    return await userRepository.save(newTokenEvent);
 }
 
 export async function saveLockedEvent(lockEvent: TokensLocked): Promise<TokensLocked> {
-    const connection = getConnection();
-    const userRepository = connection.getRepository(TokensLocked);
-
-    return await userRepository.save(lockEvent);
+    await AppDataSource.manager.save(lockEvent)
+    console.log('Processed lock event in DB')
 }
 
 export async function updateLockedEvent(address: string, updatedEvent: Partial<TokensLocked>): Promise<any[]> {
@@ -43,10 +40,8 @@ export async function updateLockedEvent(address: string, updatedEvent: Partial<T
 }
 
 export async function saveBurntEvent(burnEvent: TokensBurnt): Promise<TokensBurnt> {
-    const connection = getConnection();
-    const userRepository = connection.getRepository(TokensBurnt);
-
-    return await userRepository.save(burnEvent);
+    await AppDataSource.manager.save(burnEvent)
+    console.log('Processed burn event in DB')
 }
 
 export async function updateBurntEvent(address: string, updatedEvent: Partial<TokensBurnt>): Promise<any[]> {
@@ -63,10 +58,8 @@ export async function updateBurntEvent(address: string, updatedEvent: Partial<To
 }
 
 export async function saveReleaseEvent(releaseEvent: TokensReleased): Promise<TokensReleased> {
-    const connection = getConnection();
-    const userRepository = connection.getRepository(TokensReleased);
-
-    return await userRepository.save(releaseEvent);
+    await AppDataSource.manager.save(releaseEvent)
+    console.log('Processed release event in DB')
 }
 
 export async function updateReleaseEvent(address: string, updatedEvent: Partial<TokensReleased>): Promise<any[]> {
@@ -82,11 +75,9 @@ export async function updateReleaseEvent(address: string, updatedEvent: Partial<
     return updatedRelease;
 }
 
-export async function saveMintEvent(mintEvent: TokensMinted): Promise<TokensMinted> {
-    const connection = getConnection();
-    const userRepository = connection.getRepository(TokensMinted);
-
-    return await userRepository.save(mintEvent);
+export async function saveMintEvent(mintEvent: TokensMinted) {
+    await AppDataSource.manager.save(mintEvent)
+    console.log('Processed mint event in DB')
 }
 
 export async function updateMintEvent(address: string, updatedEvent: Partial<TokensMinted>): Promise<any[]> {

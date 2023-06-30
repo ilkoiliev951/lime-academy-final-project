@@ -5,7 +5,7 @@ const constants = require('./../utils/constants')
 const signatureGenerator = require('../../utils/helpers/permitSignatureGenerator')
 const interactionUtils = require('./../utils/contractInteractionUtils')
 const contractAddress = config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET;
-const provider = interactionUtils.getProvider(config.PROJECT_SETTINGS.isTargetLocal)
+const provider = interactionUtils.getProvider(false)
 const validator = require('./validatorInteraction')
 
 export async function mint (
@@ -38,8 +38,8 @@ export async function burnWithPermit(
     tokenAddress: string,
     amount: BigNumber,
     privateKey: string) {
-    await transferFeeOnTarget(privateKey, amount, tokenAddress);
     const wallet = interactionUtils.getWallet(privateKey, provider);
+    await transferFeeOnTarget(wallet, privateKey, amount, tokenAddress);
     await validator.validateBurnRequest(tokenSymbol, tokenAddress, amount, wallet.address);
 
     const userAddressPub = wallet.getAddress();

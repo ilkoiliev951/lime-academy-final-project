@@ -10,4 +10,9 @@ export class BlockOnSource {
 
     @Column()
     timestamp: string
+
+    constructor(lastProcessedBlockId: number, timestamp: string) {
+        this.lastProcessedBlockId = lastProcessedBlockId;
+        this.timestamp = timestamp;
+    }
 }
