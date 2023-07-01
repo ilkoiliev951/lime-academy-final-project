@@ -21,8 +21,13 @@ export async function saveNewTokenEvent(newTokenEvent: Token): Promise<Token> {
     return await userRepository.save(newTokenEvent);
 }
 
-export async function saveLockedEvent(lockEvent: TokensLocked): Promise<TokensLocked> {
-    await AppDataSource.manager.save(lockEvent)
+export async function saveLockedEvent(lockEvent: TokensLocked) {
+    let res = await AppDataSource.manager.findOneBy(TokensLocked, {
+        timestamp: lockEvent.timestamp,
+    })
+    if (!res) {
+        await AppDataSource.manager.save(lockEvent)
+    }
     console.log('Processed lock event in DB')
 }
 
@@ -39,7 +44,7 @@ export async function updateLockedEvent(address: string, updatedEvent: Partial<T
     return updatedLock;
 }
 
-export async function saveBurntEvent(burnEvent: TokensBurnt): Promise<TokensBurnt> {
+export async function saveBurntEvent(burnEvent: TokensBurnt) {
     await AppDataSource.manager.save(burnEvent)
     console.log('Processed burn event in DB')
 }
@@ -57,7 +62,7 @@ export async function updateBurntEvent(address: string, updatedEvent: Partial<To
     return updatedBurn;
 }
 
-export async function saveReleaseEvent(releaseEvent: TokensReleased): Promise<TokensReleased> {
+export async function saveReleaseEvent(releaseEvent: TokensReleased) {
     await AppDataSource.manager.save(releaseEvent)
     console.log('Processed release event in DB')
 }

@@ -5,6 +5,16 @@ import {EntityNotFoundException} from "../../utils/exceptions/EntityNotFound";
 import {BigNumber} from "ethers";
 import {TokensBurnt} from "../../entity/TokensBurnt";
 import {TokensLocked} from "../../entity/TokensLocked";
+import {AppDataSource} from "./dataSource";
+
+
+export async function connect () {
+    try {
+        await AppDataSource.connect()
+    } catch (e) {
+        console.log(e)
+    }
+}
 
 export async function validateNewToken(tokenSymbol: string, tokenName: string): Promise<boolean> {
     const connection = getConnection();
@@ -60,7 +70,7 @@ export async function validateRelease(tokenSymbol: string, tokenAddress: string,
 }
 
 async function getUserBalanceBySymbol(address: string, tokenSymbol: string) {
-    const user = await getManager()
+    const user =  await AppDataSource.manager
         .createQueryBuilder(User, "user")
         .where("user.userAddress = :address", { address: address })
         .leftJoinAndSelect("user.balances", "balances")
@@ -74,7 +84,7 @@ async function getUserBalanceBySymbol(address: string, tokenSymbol: string) {
 }
 
 async function getActiveLockEvent(address: string, tokenSymbol: string, amount: string) {
-    const activeLockEvents = await getManager()
+    const activeLockEvents =  await AppDataSource.manager
         .createQueryBuilder(TokensLocked, "event")
         .where("event.userAddress = :address", { address: address })
         .andWhere("event.tokenSymbol = :tokenSymbol", {tokenSymbol: tokenSymbol})
@@ -91,7 +101,7 @@ async function getActiveLockEvent(address: string, tokenSymbol: string, amount: 
 }
 
 async function getActiveBurnEvent(address: string, tokenSymbol: string, amount: string) {
-    const activeBurntEvents = await getManager()
+    const activeBurntEvents = await AppDataSource.manager
         .createQueryBuilder(TokensBurnt, "event")
         .where("event.userAddress = :address", { address: address })
         .andWhere("event.tokenSymbol = :tokenSymbol", {tokenSymbol: tokenSymbol})
@@ -108,6 +118,7 @@ async function getActiveBurnEvent(address: string, tokenSymbol: string, amount: 
 }
 
 export async function updateUserBalance(tokenSymbol: string, amount: string,  userAddress: string) {
+
 }
 
 

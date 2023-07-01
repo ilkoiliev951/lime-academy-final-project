@@ -35,13 +35,14 @@ async function registerSourceNetworkEventListeners() {
         repository.saveNewTokenEvent(token)
     });
 
-    contractSource.on('TokenAmountLocked', (event, user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
+    contractSource.on('TokenAmountLocked', (user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
         console.log('Intercepted TokenAmountLocked event')
-        const lockEvent: TokensLocked = new TokensLocked(tokenSymbol, tokenAddress, user, amount, chainId.toString(), lockedInContract, false, timestamp, true);
+
+        const lockEvent: TokensLocked = new TokensLocked(tokenSymbol, tokenAddress, user, amount.toString(), chainId.toString(), lockedInContract.toString(), false, timestamp, true);
         repository.saveLockedEvent(lockEvent);
     });
 
-    contractSource.on('TokenAmountReleased', (event, user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
+    contractSource.on('TokenAmountReleased', (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
         console.log('Intercepted TokenAmountReleased event')
         const releaseEvent: TokensReleased = new TokensReleased(tokenSymbol, tokenAddress, user, amount, chainId.toString(), timestamp)
         repository.saveReleaseEvent(releaseEvent);
@@ -51,7 +52,7 @@ async function registerSourceNetworkEventListeners() {
 }
 
 async function registerTargetNetworkEventListeners() {
-    contractTarget.on('NewTokenCreated', (event, tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
+    contractTarget.on('NewTokenCreated', (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
         const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'generic', chainId.toString())
         repository.saveNewTokenEvent(token)

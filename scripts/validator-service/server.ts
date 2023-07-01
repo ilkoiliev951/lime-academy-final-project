@@ -6,15 +6,9 @@ dotenv.config();
 const app = express();
 const port = process.env.VALIDATOR_API_PORT;
 const validator = require('./data/dbValidator')
+validator.connect()
 
-app.post('/api/validator/validate-new-token', async (req:Request, res:Response) => {
-    const newTokenRequestIsValid = await validator.validateNewToken(req.body.tokenSymbol, req.body.tokenName);
-    if (newTokenRequestIsValid) {
-        res.sendStatus(200);
-        return;
-    }
-    res.sendStatus(406);
-});
+
 
 app.post('/api/validator/validate-mint', async (req:Request, res:Response) => {
    const mintRequestIsValid = await validator.validateMint(req.body.tokenSymbol, req.body.tokenAddress, req.body.amount, req.body.user);
