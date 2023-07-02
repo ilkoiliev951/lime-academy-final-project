@@ -1,6 +1,7 @@
 import {BigNumber} from 'ethers';
 import {calculateFee, transferFeeOnSource} from "../handlers/feeHandler";
 import {EVMBridge, GenericERC20} from "../../../typechain-types";
+import {TransactionValidationFailed} from "../../utils/exceptions/TransactionValidationFailed";
 const validator = require('./validatorInteraction')
 const config = require('./../../../config.json')
 const constants = require('./../utils/constants')
@@ -23,7 +24,6 @@ export async function lockWithPermit(
     const userAddressPub = wallet.address;
     const bridgeContract: EVMBridge = await interactionUtils.getBridgeContract(wallet, contractAddress);
     const erc20Contract: GenericERC20 = await interactionUtils.getGenericERC20Contract(wallet, tokenAddress);
-    console.log('1')
 
     const {v,r,s} = await signatureGenerator.generateERC20PermitSignature(
         wallet,
@@ -38,8 +38,6 @@ export async function lockWithPermit(
         amount
         )
 
-    console.log('2')
-
     const lockTx = await bridgeContract.lock(
         userAddressPub,
         tokenAddress,
@@ -52,14 +50,12 @@ export async function lockWithPermit(
     )
     await lockTx.wait()
 
-    console.log('3')
-
-    console.log('LOCK TX: ' + lockTx);
-
     const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, lockTx.hash)
     if (transactionComplete) {
-        await validator.updateUserBalanceRequest(tokenSymbol, tokenAddress, amount, wallet.address)
+        await validator.updateUserBalanceRequest(wallet.address, amount.toString(), tokenSymbol, tokenAddress, '', '',  true)
         printTransactionOutput(lockTx)
+    } else {
+        throw new TransactionValidationFailed('Failed to validate, that transaction was included in block')
     }
 }
 
@@ -72,6 +68,7 @@ export async function release(
     const provider = await providerPromise;
 
     const wallet = interactionUtils.getWallet(privateKey, provider);
+
     await validator.validateReleaseRequest(tokenSymbol, tokenAddress, amount, wallet.address);
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
@@ -80,7 +77,7 @@ export async function release(
 
     const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, releaseTx.hash)
     if (transactionComplete) {
-        await validator.updateUserBalanceRequest(tokenSymbol, tokenAddress, amount, wallet.address)
+        await validator.updateUserBalanceRequest(wallet.address, tokenSymbol, tokenAddress, '', '',  true)
         printTransactionOutput(releaseTx)
     }
 }

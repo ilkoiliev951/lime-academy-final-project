@@ -1,11 +1,9 @@
 import {InvalidUserAddressError} from './../utils/exceptions/InvalidUserAddress'
 import express, { Request, Response } from 'express';
 
-const dotenv = require('dotenv');
-dotenv.config();
-
+const port = 8081;
 const app = express();
-const port = process.env.MAIN_API_PORT;
+app.use(express.json());
 
 const dataRepository = require('./data/repository')
 const validator  = require('./utils/validator')

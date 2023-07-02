@@ -7,27 +7,28 @@ export class TokenBalance{
     id: number
 
     @Column()
-    userId: number
+    userAddress: string
 
     @Column()
-    tokenSymbol: string
+    tokenSymbolSource: string
+
+    @Column()
+    tokenSymbolTarget: string
 
     @ManyToOne(() => User, user => user.balances)
     user: User;
 
     @Column({ type: "numeric", precision: 78, scale: 2 })
-    userBridgeBalance: string
+    userBalanceSource: string
 
-    @Column()
-    chainId: string
+    @Column({ type: "numeric", precision: 78, scale: 2 })
+    userBalanceTarget: string
 
-    @Column()
-    transactionVerified?: boolean
-
-    constructor(userId: number, tokenSymbol: string, userBridgeBalance: string, chainId: string) {
-        this.userId = userId;
-        this.tokenSymbol = tokenSymbol;
-        this.userBridgeBalance = userBridgeBalance;
-        this.chainId = chainId;
+    constructor(userAddress: string, tokenSymbolSource: string, tokenSymbolTarget: string, userBalanceSource: string, userBalanceTarget: string) {
+        this.userAddress = userAddress;
+        this.tokenSymbolSource = tokenSymbolSource;
+        this.tokenSymbolTarget = tokenSymbolTarget;
+        this.userBalanceSource = userBalanceSource;
+        this.userBalanceTarget = userBalanceTarget;
     }
 }

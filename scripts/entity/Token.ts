@@ -14,6 +14,10 @@ export class Token {
     @Column()
     tokenAddress: string
 
+    // Token Symbol on the other chain
+    @Column()
+    mappedToTokenSymbol: string
+
     @Column()
     tokenType: string
 

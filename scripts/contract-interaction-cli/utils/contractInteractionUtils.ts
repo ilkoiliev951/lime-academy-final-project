@@ -3,7 +3,6 @@ import secrets from "../../../secrets.json";
 import {calculateApproximateGasPriceInETH} from "../handlers/gasHandler";
 import {calculateFee} from "../handlers/feeHandler";
 import {LOGGER} from "./constants";
-
 const bridge = require("./../../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
 const genericERC20 = require("../../../artifacts/contracts/GenericERC20.sol/GenericERC20.json");
 const wrappedERC20 = require("../../../artifacts/contracts/WrappedERC20.sol/WrappedERC20.json");
@@ -37,6 +36,7 @@ export function getBridgeContract(wallet: Wallet, contractAddress:any) {
 }
 
 export function getGenericERC20Contract(wallet: Wallet, tokenContractAddress: string) {
+    console.log('Failing at: ' + tokenContractAddress)
     return new ethers.Contract(
         tokenContractAddress,
         genericERC20.abi,
@@ -53,29 +53,28 @@ export function getWrappedERC20Contract(wallet: Wallet, tokenContractAddress: st
 }
 
 export async function transactionIsIncludedInBlock (provider: any, txHash: string) {
-    let included = false;
+    console.log('checking block inclusion')
     let retryCount = 0;
-    while (!included || retryCount<4) {
+    while (retryCount<4) {
         try {
             const receipt = await provider.getTransactionReceipt(txHash);
             if (receipt && receipt.blockNumber) {
-                LOGGER.info('Transaction is confirmed and included in block', receipt.blockNumber);
-                included = true;
+                console.log('Transaction is confirmed and included in block', receipt.blockNumber);
+                return true;
             } else {
                 retryCount++;
-                LOGGER.info('Transaction is still pending. Waiting for 5 seconds before next check.');
-                await sleep(10000);
+                console.log('Transaction is still pending. Waiting for 5 seconds before next check.');
+                await sleep(50000);
                 if (retryCount == 4) {
                     LOGGER.error('Failed to fetch info on transaction block inclusion.');
-                    included = false;
                 }
             }
         } catch (error) {
             console.error('Error retrieving transaction receipt:', error);
-            break;
+            return false;
         }
     }
-    return included;
+    return false;
 }
 
 function sleep(ms: number) {
@@ -89,4 +88,16 @@ export async function calculatePreTransactionEstimates(amount: BigNumber, tokenS
     LOGGER.info('Estimated Bridge Fee: ' + bridgeFee);
     LOGGER.info('Approximate gas estimate: ' + maxGasInEth);
     LOGGER.info('Do you wish to proceed? (y/n)');
+}
+
+export async function getUserSourceBalanceOnChain (wallet, tokenAddress, userAddress) {
+    const tokenContract = await getGenericERC20Contract(wallet, tokenAddress)
+    const userBalance =  await tokenContract.balanceOf(userAddress)
+    return userBalance.toString()
+}
+
+export async function getUserTargetBalanceOnChain (wallet, tokenAddress, userAddress) {
+    const tokenContract = await getWrappedERC20Contract(wallet, tokenAddress)
+    const userBalance =  await tokenContract.balanceOf(userAddress)
+    return userBalance.toString()
 }

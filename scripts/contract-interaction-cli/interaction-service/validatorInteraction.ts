@@ -5,22 +5,39 @@ const request = require('request');
 
 export async function validateMintRequest (tokenSymbol:string, tokenAddress: string, amount: BigNumber, userAddress: string) {
     let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
-    sendValidatorRequest(requestBodyJson, 'validate-mint')
+    return await sendValidatorRequest(requestBodyJson, 'validate-mint')
 }
 
 export async function validateBurnRequest (tokenSymbol:string, tokenAddress: string, amount: BigNumber, userAddress: string) {
     let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
-    sendValidatorRequest(requestBodyJson, 'validate-burn')
+    return await sendValidatorRequest(requestBodyJson, 'validate-burn')
 }
 
 export async function validateReleaseRequest (tokenSymbol:string, tokenAddress: string, amount: BigNumber, userAddress: string) {
     let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
-    sendValidatorRequest(requestBodyJson, 'validate-release')
+    return await sendValidatorRequest(requestBodyJson, 'validate-release')
 }
 
-export async function updateUserBalanceRequest (tokenSymbol:string, tokenAddress: string, amount: BigNumber, userAddress: string) {
-    let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
-    sendValidatorRequest(requestBodyJson, 'update-balance')
+export async function updateUserBalanceRequest (
+    userAddress: string,
+    amount: string,
+    tokenSymbolSource: string,
+    tokenAddressSource: string,
+    tokenSymbolTarget: string,
+    tokenAddressTarget: string,
+    isSourceOperation) {
+
+    let requestBodyJson = {
+        user: userAddress,
+        tokenSymbolSource: tokenSymbolSource,
+        tokenSymbolTarget: tokenSymbolSource,
+        addressSource: tokenAddressSource,
+        addressTarget: tokenAddressTarget,
+        isSourceOperation: isSourceOperation,
+        amount: amount
+    }
+
+    return await sendValidatorRequest(requestBodyJson, 'update-balance')
 }
 
 function getRequestBody(tokenSymbol:string, tokenAddress: string, amount:BigNumber, userAddress: string) {
@@ -32,7 +49,7 @@ function getRequestBody(tokenSymbol:string, tokenAddress: string, amount:BigNumb
     };
 }
 
-function sendValidatorRequest(requestBody: any, apiEndpoint: string) {
+async function sendValidatorRequest(requestBody: any, apiEndpoint: string) {
     let endpoint = VALIDATOR_BASE_URL + apiEndpoint;
     request({
         url: endpoint,
@@ -40,7 +57,11 @@ function sendValidatorRequest(requestBody: any, apiEndpoint: string) {
         json: true,
         body: requestBody
     }, function (error: Error, response: Response){
-        // if (response.)
-        console.log(response);
+        if (response.statusCode === 200) {
+            console.log('Validated transaction successfully')
+            return true
+        }
+        console.error(error)
+        return false;
     });
 }
