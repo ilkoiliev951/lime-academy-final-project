@@ -1,11 +1,9 @@
-import { getConnection } from 'typeorm';
 import { TokensBurnt} from '../../entity/TokensBurnt';
 import { TokensLocked} from '../../entity/TokensLocked';
 import { TokensReleased} from '../../entity/TokensReleased';
 import { TokensMinted} from '../../entity/TokensMinted';
 import {Token} from "../../entity/Token";
 import {AppDataSource} from "./data-source";
-import {EventNotFound} from '../../utils/exceptions/EventNotFound'
 
 export async function applyDBSchemaChanges() {
     try {
@@ -17,7 +15,6 @@ export async function applyDBSchemaChanges() {
 
 export async function saveNewTokenEvent(newTokenEvent: Token): Promise<Token> {
     const userRepository = AppDataSource.getRepository(Token);
-
     return await userRepository.save(newTokenEvent);
 }
 
@@ -31,68 +28,73 @@ export async function saveLockedEvent(lockEvent: TokensLocked) {
     console.log('Processed lock event in DB')
 }
 
-// export async function updateLockedEvent(address: string, updatedEvent: Partial<TokensLocked>): Promise<any[]> {
-//     const connection = getConnection();
-//     const lockEventRepository = connection.getRepository(TokensLocked);
-//
-//     const lockEvents = await lockEventRepository.find({ where: { ['userAddress']: address } });
-//     if (!lockEvents) {
-//         throw new EventNotFound('TokensLocked event not present in database')
-//     }
-//     const updatedLock = Object.assign(lockEvents, updatedEvent);
-//     await lockEventRepository.save(updatedLock);
-//     return updatedLock;
-// }
+export async function updateLockedEvent(userAddress, amount, tokenSymbol) {
+    const token2 = await getTokenOnOtherChain(tokenSymbol)
+    if (token2) {
+        const lockEvent = await AppDataSource.manager
+            .createQueryBuilder(TokensLocked, "event")
+            .where("event.userAddress=:address", {address: userAddress})
+            .andWhere("event.tokenSymbol=:tokenSymbol", {tokenSymbol: token2.tokenSymbol})
+            .andWhere("event.amount=:amount", {amount: amount})
+            .andWhere('event.active IS TRUE')
+            .getOne()
+
+        if (lockEvent) {
+            console.log(lockEvent)
+            const lockId = lockEvent.id
+            await AppDataSource.manager.update(TokensLocked, {id: lockId}, {claimedOnTarget: true, active: false})
+            console.log('updated lock')
+        }
+    }
+}
 
 export async function saveBurntEvent(burnEvent: TokensBurnt) {
     await AppDataSource.manager.save(burnEvent)
     console.log('Processed burn event in DB')
 }
 
-// export async function updateBurntEvent(address: string, updatedEvent: Partial<TokensBurnt>): Promise<any[]> {
-//     const connection = getConnection();
-//     const burnEventRepository = connection.getRepository(TokensBurnt);
-//
-//     const burnEvents = await burnEventRepository.find({ where: { ['userAddress']: address } });
-//     if (!burnEvents) {
-//         throw new EventNotFound('TokensBurned event not present in database')
-//     }
-//     const updatedBurn = Object.assign(burnEvents, updatedEvent);
-//     await burnEventRepository.save(updatedBurn);
-//     return updatedBurn;
-// }
+export async function updateBurntEvent (userAddress, amount, tokenSymbol){
+    const token2 = await getTokenOnOtherChain(tokenSymbol)
+    if (token2) {
+        const burnEvent = await AppDataSource.manager
+            .createQueryBuilder(TokensLocked, "event")
+            .where("event.userAddress=:address", {address: userAddress})
+            .andWhere("event.tokenSymbol=:tokenSymbol", {tokenSymbol: token2.tokenSymbol})
+            .andWhere("event.amount=:amount", {amount: amount})
+            .andWhere('event.releasedOnSource IS FALSE')
+            .getOne()
+
+        if (burnEvent) {
+            const burnId = burnEvent.id
+            await AppDataSource.manager.update(TokensBurnt, {id: burnId}, {releasedOnSource: true})
+            console.log('updated burn')
+        }
+    }
+}
 
 export async function saveReleaseEvent(releaseEvent: TokensReleased) {
     await AppDataSource.manager.save(releaseEvent)
     console.log('Processed release event in DB')
 }
 
-// export async function updateReleaseEvent(address: string, updatedEvent: Partial<TokensReleased>): Promise<any[]> {
-//     const releaseEvents = await AppDataSource.manager.find(TokensReleased,{ where: { ['userAddress']: address } });
-//     if (!releaseEvents) {
-//         throw new EventNotFound('TokensReleased event not present in database')
-//     }
-//     const updatedRelease = Object.assign(releaseEvents, updatedEvent);
-//     await AppDataSource.manager.update(TokensReleased, {
-//
-//     })
-//     return updatedRelease;
-// }
-
 export async function saveMintEvent(mintEvent: TokensMinted) {
     await AppDataSource.manager.save(mintEvent)
     console.log('Processed mint event in DB')
 }
 
-// export async function updateMintEvent(address: string, updatedEvent: Partial<TokensMinted>): Promise<any[]> {
-//     const connection = getConnection();
-//     const mintEventRepository = connection.getRepository(TokensMinted);
-//
-//     const mintEvents = await mintEventRepository.find({ where: { ['userAddress']: address } });
-//     if (!mintEvents) {
-//         throw new EventNotFound('TokensMinted event not present in database')
-//     }
-//     const updatedMint = Object.assign(mintEvents, updatedEvent);
-//     await mintEventRepository.save(updatedMint);
-//     return updatedMint;
-// }
+async function getTokenOnOtherChain (symbol: string) {
+    const token1 = await AppDataSource.manager
+        .createQueryBuilder(Token, "token")
+        .where("token.tokenSymbol = :symbol", { symbol: symbol})
+        .getOne()
+
+    if (token1) {
+        const mappedSymbol = token1.mappedToTokenSymbol
+        const token2 = await AppDataSource.manager
+            .createQueryBuilder(Token, "token")
+            .where("token.tokenSymbol = :mappedSymbol", { mappedSymbol: mappedSymbol})
+            .getOne()
+
+        return token2;
+    }
+}

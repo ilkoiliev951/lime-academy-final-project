@@ -18,7 +18,7 @@ export const AppDataSource = new DataSource({
     password: "developer",
     database: "bridge_db",
     synchronize: true,
-    logging: true,
+    logging: false,
     entities: [Token,
         TokensLocked,
         TokensBurnt,

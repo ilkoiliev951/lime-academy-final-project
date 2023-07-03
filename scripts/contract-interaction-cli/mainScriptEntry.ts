@@ -12,13 +12,9 @@ export async function main() {
     let mainCommand: string = process.argv[2];
     let userPrivateKey: string = process.argv[3];
 
-    if (isNullUndefined(mainCommand)) {
-        throw new InvalidCommandInputException("Invalid main command. Call the script with the help argument to list available options.")
-    }
-
-    if (isNullUndefined(userPrivateKey) || !isValidPrivateKey(userPrivateKey)) {
-        throw new InvalidCommandInputException("Invalid wallet private key.")
-    }
+    isNullUndefined(mainCommand)
+    isNullUndefined(userPrivateKey)
+    isValidPrivateKey(userPrivateKey)
 
     switch (mainCommand) {
         case COMMANDS.LOCK:
@@ -34,6 +30,7 @@ export async function main() {
                 let tokenSymbol = process.argv[4];
                 let tokenAddress = process.argv[5];
                 let amount = BigNumber.from(process.argv[6])
+
                 await mint(tokenSymbol, tokenAddress, amount,  userPrivateKey)
             }
             break;
@@ -60,7 +57,9 @@ export async function main() {
 }
 
 function isNullUndefined(input: any) {
-    return input == null || input == undefined;
+    if (input == null || input == undefined) {
+        throw new InvalidCommandInputException("Invalid main command. Call the script with the help argument to list available options.")
+    }
 }
 
 function argumentsAreMissing(requiredArgumentArrayLength: number) {
@@ -77,8 +76,7 @@ function isValidPrivateKey(privateKey: string): boolean {
         const wallet = new ethers.Wallet(privateKey);
         return wallet != null;
     } catch (error) {
-        console.error(error);
-        return false;
+        throw new InvalidCommandInputException("Invalid wallet private key.")
     }
 }
 

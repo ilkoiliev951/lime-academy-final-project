@@ -29,48 +29,49 @@ const main = async () => {
 }
 
 async function registerSourceNetworkEventListeners() {
-    contractSource.on('NewTokenCreated', (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
+    contractSource.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
         const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString())
-        repository.saveNewTokenEvent(token)
+        await repository.saveNewTokenEvent(token)
     });
 
-    contractSource.on('TokenAmountLocked', (user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
+    contractSource.on('TokenAmountLocked', async (user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
         console.log('Intercepted TokenAmountLocked event')
 
         const lockEvent: TokensLocked = new TokensLocked(tokenSymbol, tokenAddress, user, amount.toString(), chainId.toString(), lockedInContract.toString(), false, timestamp, true);
-        repository.saveLockedEvent(lockEvent);
+        await repository.saveLockedEvent(lockEvent);
     });
 
-    contractSource.on('TokenAmountReleased', (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
+    contractSource.on('TokenAmountReleased', async (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
         console.log('Intercepted TokenAmountReleased event')
         const releaseEvent: TokensReleased = new TokensReleased(tokenSymbol, tokenAddress, user, amount, chainId.toString(), timestamp)
-        repository.saveReleaseEvent(releaseEvent);
+        await repository.saveReleaseEvent(releaseEvent);
+        await repository.updateBurntEvent(user, amount.toString(), tokenSymbol)
     });
 
-    console.log('Listening on EVM Bridge Source')
+    console.log('Listening on EVM Bridge Source Contract')
 }
 
 async function registerTargetNetworkEventListeners() {
-    contractTarget.on('NewTokenCreated', (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
+    contractTarget.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
         const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'generic', chainId.toString())
-        repository.saveNewTokenEvent(token)
+        await repository.saveNewTokenEvent(token)
     });
 
-    contractTarget.on('TokenAmountMinted', (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
+    contractTarget.on('TokenAmountMinted', async (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
         console.log('Intercepted TokenAmountMinted event')
-        console.log('AMOUNT' + amount.toString())
         const mintEvent: TokensMinted = new TokensMinted(tokenSymbol, tokenAddress, user, amount.toString(), chainId, timestamp);
-        repository.saveMintEvent(mintEvent);
+        await repository.saveMintEvent(mintEvent);
+        await repository.updateLockedEvent(user, amount.toString(), tokenSymbol)
     });
 
-    contractTarget.on('TokenAmountBurned', (user, tokenAddress, tokenSymbol, amount, chainId, timestamp) => {
+    contractTarget.on('TokenAmountBurned', async (user, tokenAddress, tokenSymbol, amount, chainId, timestamp) => {
         console.log('Intercepted TokenAmountBurned event')
         const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount, chainId, false, timestamp);
-        repository.saveBurntEvent(burntEvent);
+        await repository.saveBurntEvent(burntEvent);
     });
-    console.log('Listening on EVM Bridge Source')
+    console.log('Listening on EVM Bridge Target Contract')
 }
 
 async function readBlocksOnSourceFrom (blockNumber: number) {
@@ -95,15 +96,6 @@ async function readBlocks(startBlockNumber: number): Promise<void> {
         // Process or extract data from the block as needed
     }
 }
-
-// function checkForNewTokens () {
-//     // make 2 requests on both networks
-//
-//     // check in db
-//
-//     // update if needed
-//
-// }
 
 function getWebSocketProvider(networkType) {
     if (networkType === SOURCE_NETWORK_TYPE) {

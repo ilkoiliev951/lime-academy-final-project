@@ -1,6 +1,5 @@
 import Web3 from "web3";
 import secrets from '../../../secrets.json';
-import {LOGGER} from "../utils/constants";
 
 // Purpose of the function is
 export async function calculateApproximateGasPriceInETH(network: string, gasLimit?: number) {

@@ -2,7 +2,6 @@ import {BigNumber, ethers, Wallet} from "ethers";
 import secrets from "../../../secrets.json";
 import {calculateApproximateGasPriceInETH} from "../handlers/gasHandler";
 import {calculateFee} from "../handlers/feeHandler";
-import {LOGGER} from "./constants";
 const bridge = require("./../../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
 const genericERC20 = require("../../../artifacts/contracts/GenericERC20.sol/GenericERC20.json");
 const wrappedERC20 = require("../../../artifacts/contracts/WrappedERC20.sol/WrappedERC20.json");
@@ -27,7 +26,7 @@ export async function getProvider(isSource: boolean) {
     );
 }
 
-export function getBridgeContract(wallet: Wallet, contractAddress:any) {
+export function getBridgeContract(wallet: Wallet, contractAddress: any) {
     return new ethers.Contract(
         contractAddress,
         bridge.abi,
@@ -36,7 +35,6 @@ export function getBridgeContract(wallet: Wallet, contractAddress:any) {
 }
 
 export function getGenericERC20Contract(wallet: Wallet, tokenContractAddress: string) {
-    console.log('Failing at: ' + tokenContractAddress)
     return new ethers.Contract(
         tokenContractAddress,
         genericERC20.abi,
@@ -53,7 +51,6 @@ export function getWrappedERC20Contract(wallet: Wallet, tokenContractAddress: st
 }
 
 export async function transactionIsIncludedInBlock (provider: any, txHash: string) {
-    console.log('checking block inclusion')
     let retryCount = 0;
     while (retryCount<4) {
         try {
@@ -66,7 +63,7 @@ export async function transactionIsIncludedInBlock (provider: any, txHash: strin
                 console.log('Transaction is still pending. Waiting for 5 seconds before next check.');
                 await sleep(50000);
                 if (retryCount == 4) {
-                    LOGGER.error('Failed to fetch info on transaction block inclusion.');
+                    console.error('Failed to fetch info on transaction block inclusion.');
                 }
             }
         } catch (error) {
@@ -85,9 +82,9 @@ export async function calculatePreTransactionEstimates(amount: BigNumber, tokenS
     const maxGasInEth = calculateApproximateGasPriceInETH(network, customGasLimit);
     const bridgeFee = calculateFee(amount);
 
-    LOGGER.info('Estimated Bridge Fee: ' + bridgeFee);
-    LOGGER.info('Approximate gas estimate: ' + maxGasInEth);
-    LOGGER.info('Do you wish to proceed? (y/n)');
+    console.info('Estimated Bridge Fee: ' + bridgeFee);
+    console.info('Approximate gas estimate: ' + maxGasInEth);
+    console.info('Do you wish to proceed? (y/n)');
 }
 
 export async function getUserSourceBalanceOnChain (wallet, tokenAddress, userAddress) {

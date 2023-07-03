@@ -1,19 +1,17 @@
 import {VALIDATOR_BASE_URL} from "../utils/constants";
-import {BigNumber} from "ethers";
-import {Response} from "express";
 const request = require('request');
 
-export async function validateMintRequest (tokenSymbol:string, tokenAddress: string, amount: BigNumber, userAddress: string) {
+export async function validateMintRequest (tokenSymbol:string, tokenAddress: string, amount: string, userAddress: string) {
     let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
     return await sendValidatorRequest(requestBodyJson, 'validate-mint')
 }
 
-export async function validateBurnRequest (tokenSymbol:string, tokenAddress: string, amount: BigNumber, userAddress: string) {
+export async function validateBurnRequest (tokenSymbol:string, tokenAddress: string, amount: string, userAddress: string) {
     let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
     return await sendValidatorRequest(requestBodyJson, 'validate-burn')
 }
 
-export async function validateReleaseRequest (tokenSymbol:string, tokenAddress: string, amount: BigNumber, userAddress: string) {
+export async function validateReleaseRequest (tokenSymbol:string, tokenAddress: string, amount: string, userAddress: string) {
     let requestBodyJson = getRequestBody(tokenSymbol,tokenAddress, amount, userAddress)
     return await sendValidatorRequest(requestBodyJson, 'validate-release')
 }
@@ -30,7 +28,7 @@ export async function updateUserBalanceRequest (
     let requestBodyJson = {
         user: userAddress,
         tokenSymbolSource: tokenSymbolSource,
-        tokenSymbolTarget: tokenSymbolSource,
+        tokenSymbolTarget: tokenSymbolTarget,
         addressSource: tokenAddressSource,
         addressTarget: tokenAddressTarget,
         isSourceOperation: isSourceOperation,
@@ -40,7 +38,7 @@ export async function updateUserBalanceRequest (
     return await sendValidatorRequest(requestBodyJson, 'update-balance')
 }
 
-function getRequestBody(tokenSymbol:string, tokenAddress: string, amount:BigNumber, userAddress: string) {
+function getRequestBody(tokenSymbol:string, tokenAddress: string, amount:string , userAddress: string) {
     return  {
         tokenSymbol: tokenSymbol,
         tokenAddress: tokenAddress,
@@ -49,19 +47,26 @@ function getRequestBody(tokenSymbol:string, tokenAddress: string, amount:BigNumb
     };
 }
 
-async function sendValidatorRequest(requestBody: any, apiEndpoint: string) {
+async function sendValidatorRequest(requestBody, apiEndpoint) {
     let endpoint = VALIDATOR_BASE_URL + apiEndpoint;
-    request({
-        url: endpoint,
-        method: "POST",
-        json: true,
-        body: requestBody
-    }, function (error: Error, response: Response){
-        if (response.statusCode === 200) {
-            console.log('Validated transaction successfully')
-            return true
-        }
-        console.error(error)
-        return false;
+
+    return new Promise((resolve, reject) => {
+        request({
+            url: endpoint,
+            method: "POST",
+            json: true,
+            body: requestBody
+        }, (error, response) => {
+            if (error) {
+                console.error(error);
+                resolve(false);
+            } else {
+                if (response.statusCode === 200) {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
+            }
+        });
     });
 }
