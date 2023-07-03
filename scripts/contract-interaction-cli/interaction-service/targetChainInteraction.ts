@@ -1,5 +1,5 @@
 import {BigNumber} from 'ethers';
-import {transferFeeOnTarget} from "../handlers/feeHandler";
+import {calculateFee, transferFeeOnTarget} from "../handlers/feeHandler";
 import {EVMBridge} from "../../../typechain-types";
 import {MintRequestValidationFailed} from "../../utils/exceptions/MintRequestValidationFailed";
 import {BurnRequestValidationFailed} from "../../utils/exceptions/BurnRequestValidationFailed";
@@ -51,30 +51,31 @@ export async function burnWithPermit(
     privateKey: string) {
 
     const p = await provider;
-    const wallet = interactionUtils.getWallet(privateKey, provider);
+    const wallet = await interactionUtils.getWallet(privateKey, p);
     const validBurnRequest = await validator.validateBurnRequest(tokenSymbol, tokenAddress, amount.toString(), wallet.address);
 
     if (validBurnRequest) {
-        await transferFeeOnTarget(wallet, privateKey, amount, tokenAddress);
+        await transferFeeOnTarget(wallet, privateKey, calculateFee(amount), tokenAddress);
 
         const userAddressPub = wallet.address;
-        const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
-        const erc20Contract = interactionUtils.getGenericERC20Contract(wallet, tokenAddress);
+        const bridgeContract: EVMBridge = interactionUtils.getBridgeContract(wallet, contractAddress);
+        const werc20Contract = interactionUtils.getWrappedERC20Contract(wallet, tokenAddress);
 
-        const {v, r, s} = signatureGenerator.generateERC20PermitSignature(
+        const {v, r, s} = await signatureGenerator.generateERC20PermitSignature(
             wallet,
-            erc20Contract.name(),
+            await werc20Contract.name(),
             '1',
             constants.TARGET_CHAIN_ID,
             tokenAddress,
             userAddressPub,
             bridgeContract.address,
-            erc20Contract.nonces(userAddressPub),
+            await werc20Contract.nonces(userAddressPub),
             constants.PERMIT_DEADLINE,
             amount
         )
 
         const burnTx = await bridgeContract.burnWithPermit(
+            tokenSymbol,
             tokenAddress,
             userAddressPub,
             amount,
@@ -85,7 +86,7 @@ export async function burnWithPermit(
         )
         await burnTx.wait()
 
-        const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, burnTx.hash)
+        const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(p, burnTx.hash)
         if (transactionComplete) {
             const userBalanceUpdated = await validator.updateUserBalanceRequest(userAddressPub, amount.toString(), '', '', tokenSymbol, tokenAddress, false)
             if (userBalanceUpdated) {

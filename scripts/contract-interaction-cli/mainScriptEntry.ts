@@ -38,7 +38,7 @@ export async function main() {
             if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.BURN)) {
                 let tokenSymbol = process.argv[4];
                 let tokenAddress = process.argv[5];
-                let amount =  BigNumber.from(process.argv[5]);
+                let amount =  BigNumber.from(process.argv[6]);
                 await burnWithPermit(tokenSymbol,tokenAddress, amount, userPrivateKey)
             }
             break;

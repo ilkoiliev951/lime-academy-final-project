@@ -23,7 +23,7 @@ export async function transferFeeOnSource(wallet: any,  privateKey: string, feeA
 export async function transferFeeOnTarget(wallet: any, privateKey: string, feeAmount: BigNumber, tokenAddress: string) {
     const werc20: WrappedERC20 = interactionUtils.getWrappedERC20Contract(wallet, tokenAddress);
     try {
-        const tx = await werc20.transfer(config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE, feeAmount);
+        const tx = await werc20.transfer(config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET, feeAmount);
         await tx.wait();
         console.log('Wrapped Token bridge fee transferred successfully!');
     } catch (error) {
