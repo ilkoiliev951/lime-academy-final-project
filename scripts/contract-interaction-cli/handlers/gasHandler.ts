@@ -1,7 +1,7 @@
 import Web3 from "web3";
 import secrets from '../../../secrets.json';
 
-// Purpose of the function is
+// Purpose of the function is giving an approximate estimation of the max gas price to the CLI user
 export async function calculateApproximateGasPriceInETH(network: string, gasLimit?: number) {
     let currentGasPrice: string = await getCurrentGasPriceInETH(network);
     if (gasLimit === null ||
