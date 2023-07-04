@@ -6,10 +6,7 @@ import {TokensMinted} from "../entity/TokensMinted";
 import {TokensBurnt} from "../entity/TokensBurnt";
 import {TokensLocked} from "../entity/TokensLocked";
 import {TokensReleased} from "../entity/TokensReleased";
-import {parse} from "url";
-
-const Web3 = require('web3');
-const web3 = new Web3();
+import {getLastProcessedSourceBlock, getLastProcessedTargetBlock} from "./data/repository";
 
 const {ethers} = require('ethers');
 const config = require('../../config.json')
@@ -24,13 +21,12 @@ const sourceProvider = getWebSocketProvider(SOURCE_NETWORK_TYPE)
 const contractSource = getContract(SOURCE_NETWORK_TYPE, sourceProvider)
 
 const main = async () => {
+    // Establish initial DB connection
     await repository.connect();
 
     // Read blocks and process events from last saved event number
-    // await readBlocksOnSourceFrom(3823059)
-    await readBlocksOnTargetFrom(9282198)
-    // await readBlocksOnSourceFrom(await repository.getLastProcessedTargetBlock())
-    // await readBlocksOnTargetFrom(await repository.getLastProcessedTargetBlock())
+    await readBlocksOnSourceFrom(await getLastProcessedSourceBlock())
+    await readBlocksOnTargetFrom(await getLastProcessedTargetBlock())
 
     // Register the event listeners on both contracts
     await registerSourceNetworkEventListeners();
@@ -100,8 +96,6 @@ async function readBlocksOnTargetFrom(startingBlock: number) {
                 const methodId = tx.data.substring(0, 10);
                 const method = iface.getFunction(methodId).name;
 
-                console.log(method)
-
                 switch (method) {
                     case 'createToken':
                         const decodedNewToken = iface.decodeEventLog("NewTokenCreated", logs[i].data);
@@ -109,12 +103,11 @@ async function readBlocksOnTargetFrom(startingBlock: number) {
                         break;
                     case 'mint':
                         const decodedMint = iface.decodeEventLog("TokenAmountMinted", logs[i].data);
-
+                        await parser.parseMintEvent(decodedMint, topics)
                         break;
                     case 'burnWithPermit':
                         const decodedBurn = iface.decodeEventLog("TokenAmountBurned", logs[i].data);
                         await parser.parseBurnEvent(decodedBurn, topics)
-                        break;
                         break;
                     default:
                         return;
@@ -124,7 +117,7 @@ async function readBlocksOnTargetFrom(startingBlock: number) {
             }
         }
     } else {
-        console.info('No starting block exists in DB for source network')
+        console.info('No starting block exists in DB for target network')
     }
 }
 

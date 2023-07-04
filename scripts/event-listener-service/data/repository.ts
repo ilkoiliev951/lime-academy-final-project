@@ -5,6 +5,7 @@ import { TokensMinted} from '../../entity/TokensMinted';
 import {Token} from "../../entity/Token";
 import {AppDataSource} from "./data-source";
 import {BlockOnTarget} from "../../entity/BlockOnTarget";
+import {BlockOnSource} from "../../entity/BlockOnSource";
 
 export async function connect() {
     try {
@@ -86,7 +87,15 @@ export async function saveMintEvent(mintEvent: TokensMinted) {
 export async function getLastProcessedTargetBlock() {
     const lastProcessedBlock = await AppDataSource.manager
         .createQueryBuilder(BlockOnTarget, "block")
-        .where("block.id=:address")
+        .where("block.id!=0")
+        .getOne()
+    return lastProcessedBlock ? lastProcessedBlock.lastProcessedBlockId : null
+}
+
+export async function getLastProcessedSourceBlock() {
+    const lastProcessedBlock = await AppDataSource.manager
+        .createQueryBuilder(BlockOnSource, "block")
+        .where("block.id!=0")
         .getOne()
     return lastProcessedBlock ? lastProcessedBlock.lastProcessedBlockId : null
 }
