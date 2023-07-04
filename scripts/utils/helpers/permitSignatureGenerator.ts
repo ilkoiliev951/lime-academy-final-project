@@ -55,10 +55,5 @@ export async function generateERC20PermitSignature (
         )
     );
 
-    console.log(v)
-    console.log(r)
-    console.log(s)
-    console.log(signer)
-
     return {v,r,s}
 }

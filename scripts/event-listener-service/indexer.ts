@@ -9,7 +9,7 @@ import {TokensReleased} from "../entity/TokensReleased";
 
 const {ethers} = require('ethers');
 const config = require('../../config.json')
-const bridge = require("../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
+const bridge= require("../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
 const repository = require('./data/repository')
 
 const targetProvider = getWebSocketProvider(TARGET_NETWORK_TYPE)
@@ -20,9 +20,14 @@ const contractSource = getContract(SOURCE_NETWORK_TYPE, sourceProvider)
 
 const main = async () => {
     // Apply DB schema changes on start up, if any
-    await repository.applyDBSchemaChanges();
-    // Check for newly created tokens and update the db
-   // await
+    //await repository.connect();
+
+    // Read blocks from last processed
+    await readBlocksOnTargetFrom(await repository.getLastProcessedTargetBlock())
+
+
+
+
     // Register the event listeners on both contracts
     await registerSourceNetworkEventListeners();
     await registerTargetNetworkEventListeners();
@@ -81,8 +86,31 @@ async function readBlocksOnSourceFrom (blockNumber: number) {
         });
 }
 
-async function readBlocksOnTargetFrom (block: number) {
-    // verify, that the transaction is complete on the block
+async function readBlocksOnTargetFrom (blockNumber: number) {
+    const provider =  getWebSocketProvider(TARGET_NETWORK_TYPE)
+    const block = await provider.getBlock(blockNumber);
+    const allEvents = [];
+
+    const iface = new ethers.utils.Interface(bridge.abi);
+    const logs = await provider.getLogs({
+        fromBlock: blockNumber,
+        toBlock: provider.getBlockNumber(),
+        address: config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET
+    });
+
+
+    // for (let i = 0; i <logs.length ; i++) {
+    //     // Process Mint Events if any
+    //     console.log(iface.decodeEventLog("TokenAmountMinted", logs[i].data))
+    // }
+
+
+    for (let i = 0; i <logs.length ; i++) {
+        // Process Burn Events if any
+        iface.decodeEventLog("TokenAmountBurned", logs[i].data)
+    }
+
+    return allEvents;
 }
 
 async function readBlocks(startBlockNumber: number): Promise<void> {

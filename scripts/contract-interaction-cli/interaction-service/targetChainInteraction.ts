@@ -4,6 +4,7 @@ import {EVMBridge} from "../../../typechain-types";
 import {MintRequestValidationFailed} from "../../utils/exceptions/MintRequestValidationFailed";
 import {BurnRequestValidationFailed} from "../../utils/exceptions/BurnRequestValidationFailed";
 const config = require('./../../../config.json')
+const siwe = require('siwe')
 const constants = require('./../utils/constants')
 const signatureGenerator = require('../../utils/helpers/permitSignatureGenerator')
 const interactionUtils = require('./../utils/contractInteractionUtils')

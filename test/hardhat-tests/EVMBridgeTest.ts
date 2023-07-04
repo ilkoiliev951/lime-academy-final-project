@@ -197,6 +197,31 @@ describe("EVM Token Bridge", function () {
                 100)).to.be.revertedWithCustomError(bridge, 'TokenDoesntExist');
     });
 
+    it("Should mint initial generic token amount and assign to user wallet", async function () {
+        const genericTokenAddress = await bridge.tokens('GTT');
+
+        const updateTx = await bridge.updateUserBridgeBalance(testUserAddress, ETH_IN_WEI, 0, "WTT");
+        await updateTx.wait()
+
+        const testWrappedERCContract = await ethers.getContractAt(
+            "WrappedERC20",
+            wrappedTokenAddress
+        );
+
+        const transaction = await bridge.mint(
+            "WTT",
+            "Wrapped Test Token",
+            wrappedTokenAddress,
+            testUserAddress,
+            ETH_IN_WEI);
+
+        await transaction.wait();
+        const userBalanceAfterMint = await testWrappedERCContract.balanceOf(testUserAddress);
+
+        await expect(transaction).emit(bridge, "TokenAmountMinted")
+        expect(userBalanceAfterMint.toString()).to.be.equal('1000000000000000000')
+    });
+
     // Lock
 
     it("Should lock token amount in bridge contract with permit", async function () {

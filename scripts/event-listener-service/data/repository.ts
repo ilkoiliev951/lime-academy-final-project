@@ -4,8 +4,9 @@ import { TokensReleased} from '../../entity/TokensReleased';
 import { TokensMinted} from '../../entity/TokensMinted';
 import {Token} from "../../entity/Token";
 import {AppDataSource} from "./data-source";
+import {BlockOnTarget} from "../../entity/BlockOnTarget";
 
-export async function applyDBSchemaChanges() {
+export async function connect() {
     try {
        await AppDataSource.connect()
     } catch (e) {
@@ -80,6 +81,14 @@ export async function saveReleaseEvent(releaseEvent: TokensReleased) {
 export async function saveMintEvent(mintEvent: TokensMinted) {
     await AppDataSource.manager.save(mintEvent)
     console.log('Processed mint event in DB')
+}
+
+export async function getLastProcessedTargetBlock() {
+    const lastProcessedBlock = await AppDataSource.manager
+        .createQueryBuilder(BlockOnTarget, "block")
+        .where("block.id=:address")
+        .getOne()
+    return lastProcessedBlock ? lastProcessedBlock.lastProcessedBlockId : null
 }
 
 async function getTokenOnOtherChain (symbol: string) {
