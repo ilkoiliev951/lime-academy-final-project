@@ -198,32 +198,77 @@ describe("EVM Token Bridge", function () {
     });
 
     it("Should mint initial generic token amount and assign to user wallet", async function () {
-        const genericTokenAddress = await bridge.tokens('GTT');
+        const genericTokenAddress = await bridge.tokens('GTT')
+        const signer = await ethers.getSigners();
+        const testUserAddress = signer[10].address
 
-        const updateTx = await bridge.updateUserBridgeBalance(testUserAddress, ETH_IN_WEI, 0, "WTT");
-        await updateTx.wait()
-
-        const testWrappedERCContract = await ethers.getContractAt(
-            "WrappedERC20",
-            wrappedTokenAddress
+        const testGenericERCContract = await ethers.getContractAt(
+            "GenericERC20",
+            genericTokenAddress
         );
 
-        const transaction = await bridge.mint(
-            "WTT",
-            "Wrapped Test Token",
-            wrappedTokenAddress,
+        const transaction = await bridge.mintInitialGenericTokenAmount(
+            "GTT",
             testUserAddress,
+            genericTokenAddress,
             ETH_IN_WEI);
 
         await transaction.wait();
-        const userBalanceAfterMint = await testWrappedERCContract.balanceOf(testUserAddress);
+        const userBalanceAfterMint = await testGenericERCContract.balanceOf(testUserAddress);
 
         await expect(transaction).emit(bridge, "TokenAmountMinted")
-        expect(userBalanceAfterMint.toString()).to.be.equal('1000000000000000000')
+        expect(userBalanceAfterMint.toString()).to.be.equal(ETH_IN_WEI)
+    });
+
+    it("Should revert when trying to mint initial tokens with invalid amount", async function () {
+        const genericTokenAddress = await bridge.tokens('GTT')
+        const signer = await ethers.getSigners();
+        const testUserAddress = signer[10].address
+
+        await expect( bridge.mintInitialGenericTokenAmount(
+            "GTT",
+            testUserAddress,
+            genericTokenAddress,
+            0)).to.be.revertedWithCustomError(bridge, 'InvalidAmount');
+    });
+
+    it("Should revert when trying to mint initial tokens with invalid string input", async function () {
+        const genericTokenAddress = await bridge.tokens('GTT')
+        const signer = await ethers.getSigners();
+        const testUserAddress = signer[10].address
+
+        await expect( bridge.mintInitialGenericTokenAmount(
+            "",
+            testUserAddress,
+            genericTokenAddress,
+            ETH_IN_WEI)).to.be.revertedWithCustomError(bridge, 'InvalidStringInput');
+    });
+
+    it("Should revert when trying to mint initial tokens with unexciting token symbol", async function () {
+        const genericTokenAddress = await bridge.tokens('GTT')
+        const signer = await ethers.getSigners();
+        const testUserAddress = signer[10].address
+
+        await expect( bridge.mintInitialGenericTokenAmount(
+            "GTT8",
+            testUserAddress,
+            genericTokenAddress,
+            ETH_IN_WEI)).to.be.revertedWithCustomError(bridge, 'TokenDoesntExist');
+    });
+
+    it("Should revert when trying to mint initial tokens from non-owner account", async function () {
+        const genericTokenAddress = await bridge.tokens('GTT')
+        const signer = await ethers.getSigners();
+        const testUserAddress = signer[10].address
+
+        await expect( bridge.connect(signer[10]).mintInitialGenericTokenAmount(
+            "GTT",
+            testUserAddress,
+            genericTokenAddress,
+            ETH_IN_WEI)).to.be.revertedWith( "Ownable: caller is not the owner");
     });
 
     // Lock
-
     it("Should lock token amount in bridge contract with permit", async function () {
         // Fetch needed addresses
         const signers = await ethers.getSigners();
@@ -705,7 +750,6 @@ describe("EVM Token Bridge", function () {
             s)).to.be.revertedWithCustomError(bridge, 'InvalidAmount')
     });
 
-    // Release
 
     it("Should release token amount back to user wallet", async function () {
         // Fetch needed addresses
@@ -795,7 +839,6 @@ describe("EVM Token Bridge", function () {
     });
 
     // Update user bridge balance
-
     it("Should revert when trying to update balance from non-owner account", async function () {
         const signers = await ethers.getSigners();
         const userAddress = await signers[7].getAddress();
@@ -811,5 +854,29 @@ describe("EVM Token Bridge", function () {
 
         await expect(bridge.updateUserBridgeBalance(userAddress, 100, 200, ''))
             .to.be.revertedWithCustomError(bridge, 'InvalidStringInput');
+    });
+
+    it("GenericERC20 should revert when mint caller is not contract owner", async function () {
+        const genericTokenAddress = await bridge.tokens('GTT');
+        const [owner, addr3] = await ethers.getSigners();
+        const userAddress = addr3.address
+        const testGenericERCContract = await ethers.getContractAt(
+            "GenericERC20",
+            genericTokenAddress
+        );
+        await expect(testGenericERCContract.connect(addr3).mint(userAddress, 1000))
+            .to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("WrappedERC20 should revert when mint caller is not contract owner", async function () {
+        const wrappedTokenAddress = await bridge.tokens('WTT');
+        const [owner, addr3] = await ethers.getSigners();
+        const userAddress = addr3.address
+        const testWrappedERCContract = await ethers.getContractAt(
+            "WrappedERC20",
+            wrappedTokenAddress
+        );
+        await expect(testWrappedERCContract.connect(addr3).mint(userAddress, 1000))
+            .to.be.revertedWith("Ownable: caller is not the owner");
     });
 });
