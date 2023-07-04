@@ -19,14 +19,11 @@ const sourceProvider = getWebSocketProvider(SOURCE_NETWORK_TYPE)
 const contractSource = getContract(SOURCE_NETWORK_TYPE, sourceProvider)
 
 const main = async () => {
-    // Apply DB schema changes on start up, if any
-    //await repository.connect();
+    await repository.connect();
 
-    // Read blocks from last processed
+    // Read blocks and process events from last saved event number
+    await readBlocksOnSourceFrom(await repository.getLastProcessedTargetBlock())
     await readBlocksOnTargetFrom(await repository.getLastProcessedTargetBlock())
-
-
-
 
     // Register the event listeners on both contracts
     await registerSourceNetworkEventListeners();
@@ -88,8 +85,6 @@ async function readBlocksOnSourceFrom (blockNumber: number) {
 
 async function readBlocksOnTargetFrom (blockNumber: number) {
     const provider =  getWebSocketProvider(TARGET_NETWORK_TYPE)
-    const block = await provider.getBlock(blockNumber);
-    const allEvents = [];
 
     const iface = new ethers.utils.Interface(bridge.abi);
     const logs = await provider.getLogs({
@@ -98,11 +93,16 @@ async function readBlocksOnTargetFrom (blockNumber: number) {
         address: config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET
     });
 
+    for (let i = 0; i <logs.length ; i++) {
+        // Process Mint Events if any
+        console.log(iface.decodeEventLog("NewTokenCreated", logs[i].data))
+    }
 
-    // for (let i = 0; i <logs.length ; i++) {
-    //     // Process Mint Events if any
-    //     console.log(iface.decodeEventLog("TokenAmountMinted", logs[i].data))
-    // }
+
+    for (let i = 0; i <logs.length ; i++) {
+        // Process Mint Events if any
+        console.log(iface.decodeEventLog("TokenAmountMinted", logs[i].data))
+    }
 
 
     for (let i = 0; i <logs.length ; i++) {
@@ -110,18 +110,42 @@ async function readBlocksOnTargetFrom (blockNumber: number) {
         iface.decodeEventLog("TokenAmountBurned", logs[i].data)
     }
 
-    return allEvents;
 }
 
-async function readBlocks(startBlockNumber: number): Promise<void> {
-    const provider = new ethers.providers.JsonRpcProvider('https://sepolia-testnet-url'); // Replace 'https://sepolia-testnet-url' with the actual Sepolia testnet URL
+async function readBlocksOnSource(startingBlock: number) {
+    if (startingBlock!=0) {
+        const provider = getWebSocketProvider(SOURCE_NETWORK_TYPE)
 
-    const currentBlockNumber = await provider.getBlockNumber();
+        const iface = new ethers.utils.Interface(bridge.abi);
+        const logs = await provider.getLogs({
+            fromBlock: startingBlock,
+            toBlock: provider.getBlockNumber(),
+            address: config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE
+        });
 
-    for (let blockNumber = startBlockNumber; blockNumber <= currentBlockNumber; blockNumber++) {
-        const block = await provider.getBlock(blockNumber);
-        console.log(block);
-        // Process or extract data from the block as needed
+        for (let i = 0; i < logs.length; i++) {
+            // Process Mint Events if any
+            const newTokenEvent = iface.decodeEventLog("NewTokenCreated", logs[i].data)
+            // const tokenSymbol =
+            // const tokenName
+            // const tokenAddress
+            //
+            //
+            // const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString())
+            // await repository.saveNewTokenEvent(token)
+        }
+
+        for (let i = 0; i < logs.length; i++) {
+            // Process Lock Events if any
+            console.log(iface.decodeEventLog("TokenAmountLocked", logs[i].data))
+        }
+
+        for (let i = 0; i < logs.length; i++) {
+            // Process Release Events if any
+            iface.decodeEventLog("TokenAmountReleased", logs[i].data)
+        }
+    } else {
+        console.info()
     }
 }
 

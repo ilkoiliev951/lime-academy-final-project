@@ -82,10 +82,10 @@ function isValidPrivateKey(privateKey: string): boolean {
 
 function printHelpOptions() {
     console.log('=== Available commands === \n')
-    console.log('lock : Mandatory arguments: --  \n')
-    console.log('claim : Mandatory arguments: --  \n')
-    console.log('burn: Mandatory arguments: bookId \n')
-    console.log('release : Mandatory arguments: bookId \n')
+    console.log('lock : Mandatory arguments: privateKey tokenSymbol tokenAddress amount\n')
+    console.log('claim : Mandatory arguments: privateKey tokenSymbol tokenAddress amount\n')
+    console.log('burn: Mandatory arguments: privateKey tokenSymbol tokenAddress amount\n')
+    console.log('release : Mandatory arguments: privateKey tokenSymbol tokenAddress amount\n')
 }
 
 main().catch((error) => {
