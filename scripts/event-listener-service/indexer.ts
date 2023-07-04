@@ -148,6 +148,8 @@ async function readBlocksOnSourceFrom(startingBlock: number) {
                         await parser.parseDecodedLockEvent(decodedLock, topics)
                         break;
                     case 'release':
+                        const decodedRelease = iface.decodeEventLog("TokenAmountReleased", logs[i].data);
+                        await parser.parseDecodedReleaseEvent(decodedRelease, topics)
                         break;
                     default:
                         return;

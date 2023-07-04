@@ -3,7 +3,7 @@ import {TokensLocked} from "../../entity/TokensLocked";
 import {Token} from "../../entity/Token";
 import {TokensBurnt} from "../../entity/TokensBurnt";
 import {TokensMinted} from "../../entity/TokensMinted";
-import {token} from "../../../typechain-types/@openzeppelin/contracts";
+import {TokensReleased} from "../../entity/TokensReleased";
 
 const repository = require('./../data/repository')
 const config = require('../../../config.json')
@@ -31,6 +31,32 @@ export async function parseDecodedLockEvent(decodedLock: any, topics) {
             true)
 
         await repository.saveLockedEvent(lockEntity)
+    }
+}
+
+export async function parseDecodedReleaseEvent(decodedRelease: any, topics) {
+    if (decodedRelease) {
+        const decoder = new ethers.utils.AbiCoder();
+
+        const userAddress = await decoder.decode(["address"], topics[topics.length - 2])
+        const tokenAddress = await decoder.decode(["address"], topics[topics.length - 1])
+        const tokenSymbol = decodedRelease['tokenSymbol']
+        const amount = decodedRelease['amount']
+        const chainId = decodedRelease['chainId']
+        const timestamp = decodedRelease['timestamp']
+
+        const releaseEntity = new TokensReleased(
+            tokenSymbol,
+            tokenAddress.at(0),
+            userAddress.at(0),
+            amount.toString(),
+            chainId.toString(),
+            timestamp.toString()
+        )
+
+        console.log(releaseEntity)
+
+        await repository.saveReleaseEvent(releaseEntity)
     }
 }
 
@@ -65,10 +91,11 @@ export async function parseNewTokenEvent(decodedNewToken: any, topics) {
 }
 
 export async function parseBurnEvent(decodedBurn: any, topics) {
-    const decoder = new ethers.utils.AbiCoder();
-    const userAddress = await decoder.decode(["address"], topics[topics.length - 2])
-    const tokenAddress = await decoder.decode(["address"], topics[topics.length - 1])
     if (decodedBurn) {
+        const decoder = new ethers.utils.AbiCoder();
+        const userAddress = await decoder.decode(["address"], topics[topics.length - 2])
+        const tokenAddress = await decoder.decode(["address"], topics[topics.length - 1])
+
         const tokenSymbol = decodedBurn['tokenSymbol']
         const amount = decodedBurn['amount']
         const chainId = decodedBurn['chainId']
@@ -91,10 +118,10 @@ export async function parseBurnEvent(decodedBurn: any, topics) {
 }
 
 export async function parseMintEvent(decodedMintToken: any, topics) {
-    const decoder = new ethers.utils.AbiCoder();
-    const userAddress = await decoder.decode(["address"], topics[topics.length - 2])
-    const tokenAddress = await decoder.decode(["address"], topics[topics.length - 1])
     if (decodedMintToken) {
+        const decoder = new ethers.utils.AbiCoder();
+        const userAddress = await decoder.decode(["address"], topics[topics.length - 2])
+        const tokenAddress = await decoder.decode(["address"], topics[topics.length - 1])
         const tokenSymbol = decodedMintToken['tokenSymbol']
         const amount = decodedMintToken['amount']
         const chainId = decodedMintToken['chainId']
