@@ -6,10 +6,14 @@ import {TokensMinted} from "../entity/TokensMinted";
 import {TokensBurnt} from "../entity/TokensBurnt";
 import {TokensLocked} from "../entity/TokensLocked";
 import {TokensReleased} from "../entity/TokensReleased";
+import {token} from "../../typechain-types/@openzeppelin/contracts";
+
+const Web3 = require('web3');
+const web3 = new Web3();
 
 const {ethers} = require('ethers');
 const config = require('../../config.json')
-const bridge= require("../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
+const bridge = require("../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
 const repository = require('./data/repository')
 
 const targetProvider = getWebSocketProvider(TARGET_NETWORK_TYPE)
@@ -22,8 +26,9 @@ const main = async () => {
     await repository.connect();
 
     // Read blocks and process events from last saved event number
-    await readBlocksOnSourceFrom(await repository.getLastProcessedTargetBlock())
-    await readBlocksOnTargetFrom(await repository.getLastProcessedTargetBlock())
+    await readBlocksOnSource(3823059)
+    // await readBlocksOnSourceFrom(await repository.getLastProcessedTargetBlock())
+    // await readBlocksOnTargetFrom(await repository.getLastProcessedTargetBlock())
 
     // Register the event listeners on both contracts
     await registerSourceNetworkEventListeners();
@@ -33,7 +38,7 @@ const main = async () => {
 async function registerSourceNetworkEventListeners() {
     contractSource.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
-        const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString())
+        const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString(), tokenName.toString().replace('G', 'W'))
         await repository.saveNewTokenEvent(token)
     });
 
@@ -57,7 +62,7 @@ async function registerSourceNetworkEventListeners() {
 async function registerTargetNetworkEventListeners() {
     contractTarget.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
         console.log('Intercepted NewTokenCreated event')
-        const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'generic', chainId.toString())
+        const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'generic', chainId.toString(), tokenName.toString().replace('W', 'G'))
         await repository.saveNewTokenEvent(token)
     });
 
@@ -76,15 +81,8 @@ async function registerTargetNetworkEventListeners() {
     console.log('Listening on EVM Bridge Target Contract')
 }
 
-async function readBlocksOnSourceFrom (blockNumber: number) {
-    readBlocksOnSourceFrom(blockNumber)
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-}
-
-async function readBlocksOnTargetFrom (blockNumber: number) {
-    const provider =  getWebSocketProvider(TARGET_NETWORK_TYPE)
+async function readBlocksOnTargetFrom(blockNumber: number) {
+    const provider = getWebSocketProvider(TARGET_NETWORK_TYPE)
 
     const iface = new ethers.utils.Interface(bridge.abi);
     const logs = await provider.getLogs({
@@ -93,19 +91,19 @@ async function readBlocksOnTargetFrom (blockNumber: number) {
         address: config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET
     });
 
-    for (let i = 0; i <logs.length ; i++) {
+    for (let i = 0; i < logs.length; i++) {
         // Process Mint Events if any
         console.log(iface.decodeEventLog("NewTokenCreated", logs[i].data))
     }
 
 
-    for (let i = 0; i <logs.length ; i++) {
+    for (let i = 0; i < logs.length; i++) {
         // Process Mint Events if any
         console.log(iface.decodeEventLog("TokenAmountMinted", logs[i].data))
     }
 
 
-    for (let i = 0; i <logs.length ; i++) {
+    for (let i = 0; i < logs.length; i++) {
         // Process Burn Events if any
         iface.decodeEventLog("TokenAmountBurned", logs[i].data)
     }
@@ -113,7 +111,7 @@ async function readBlocksOnTargetFrom (blockNumber: number) {
 }
 
 async function readBlocksOnSource(startingBlock: number) {
-    if (startingBlock!=0) {
+    if (startingBlock != 0) {
         const provider = getWebSocketProvider(SOURCE_NETWORK_TYPE)
 
         const iface = new ethers.utils.Interface(bridge.abi);
@@ -124,28 +122,86 @@ async function readBlocksOnSource(startingBlock: number) {
         });
 
         for (let i = 0; i < logs.length; i++) {
-            // Process Mint Events if any
-            const newTokenEvent = iface.decodeEventLog("NewTokenCreated", logs[i].data)
-            // const tokenSymbol =
-            // const tokenName
-            // const tokenAddress
-            //
-            //
-            // const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString())
-            // await repository.saveNewTokenEvent(token)
-        }
+            try {
+                const topics = logs[i].topics
+                const tx = await provider.getTransaction(logs[i].transactionHash)
+                const iface = new ethers.utils.Interface(bridge.abi);
+                const methodId = tx.data.substring(0, 10);
+                const method = iface.getFunction(methodId).name;
 
-        for (let i = 0; i < logs.length; i++) {
-            // Process Lock Events if any
-            console.log(iface.decodeEventLog("TokenAmountLocked", logs[i].data))
-        }
-
-        for (let i = 0; i < logs.length; i++) {
-            // Process Release Events if any
-            iface.decodeEventLog("TokenAmountReleased", logs[i].data)
+                switch (method) {
+                    case 'createToken':
+                        const decodedNewToken = iface.decodeEventLog("NewTokenCreated", logs[i].data);
+                        await parseNewTokenEvent(decodedNewToken, topics)
+                        break;
+                    case 'lock':
+                        const decodedLock = iface.decodeEventLog("TokenAmountLocked", logs[i].data);
+                        await parseDecodedLockEvent(decodedLock, topics)
+                        break;
+                    case 'release':
+                        break;
+                    default:
+                        return;
+                }
+            } catch (e) {
+                console.log(e)
+            }
         }
     } else {
-        console.info()
+        console.info('No starting block exists in DB for source network')
+    }
+}
+
+async function parseNewTokenEvent(decodedNewToken: any, topics) {
+    const decoder = new ethers.utils.AbiCoder();
+    const tokenAddress = await decoder.decode(["address"], topics[topics.length - 1])
+    if (decodedNewToken) {
+        const tokenSymbol = decodedNewToken['tokenSymbol']
+        const tokenName = decodedNewToken['tokenName']
+        const chainId = decodedNewToken['chainId']
+        let tokenType = chainId==5 ? 'wrapped' : 'generic'
+
+        let mappedToTokenSymbol
+        if(tokenType=='wrapped') {
+            mappedToTokenSymbol = tokenName.toString().replace('G', 'W')
+        } else {
+            mappedToTokenSymbol = tokenName.toString().replace('W', 'G')
+        }
+
+        const tokenEntity = new Token(
+            tokenSymbol,
+            tokenName,
+            tokenAddress.at(0),
+            tokenType,
+            chainId,
+            mappedToTokenSymbol
+        )
+
+        await repository.saveNewTokenEvent(tokenEntity)
+    }
+}
+
+async function parseDecodedLockEvent(decodedLock: any, topics) {
+    if (decodedLock) {
+        const decoder = new ethers.utils.AbiCoder();
+        const tokenAddress = await decoder.decode(["address"], topics[topics.length - 1])
+        const tokenSymbol = decodedLock['tokenSymbol']
+        const amount = decodedLock['amount']
+        const chainId = decodedLock['chainId']
+        const timestamp = decodedLock['timestamp']
+
+        const lockEntity = new TokensLocked(
+            tokenSymbol,
+            tokenAddress.at(0),
+            amount._hex,
+            amount.toString(),
+            chainId.toString(),
+            config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE,
+            false,
+            timestamp.toString(),
+            true)
+
+        await repository.saveLockedEvent(lockEntity)
     }
 }
 

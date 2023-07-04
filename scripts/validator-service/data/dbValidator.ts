@@ -111,27 +111,29 @@ export async function updateUserBalance(
     targetBalance
      ) {
 
-    const userRepository = AppDataSource.getRepository(User)
-    const user = await userRepository.findOne({
-        relations: {
-            balances: true,
-        },
-    })
+    const user = await AppDataSource.manager
+        .createQueryBuilder(User, "user")
+        .where("user.userAddress = :userAddress", { userAddress: userAddress})
+        .getOne()
+
+    const userBalance = await AppDataSource.manager
+        .createQueryBuilder(TokenBalance, "balance")
+        .where("balance.userAddress=:userAddress", { userAddress: userAddress})
+        .andWhere("tokenSymbol.tokenSymbolTarget=:tokenSymbolTarget OR tokenSymbol.tokenSymbolSource=:tokenSymbolSource",
+            {tokenSymbolTarget: tokenSymbolTarget, tokenSymbolSource: tokenSymbolSource})
+        .getOne()
 
     if (user) {
-        const balances = user.balances;
-        for (const balance of balances) {
-            if (balance.tokenSymbolSource === tokenSymbolSource) {
+        if (userBalance) {
+            await AppDataSource.manager.update(TokenBalance, {id: userBalance.id},
+                {userBalanceSource: sourceBalance, userBalanceTarget: targetBalance})
+        } else {
+            let newBalance = new TokenBalance(userAddress, tokenSymbolSource, tokenSymbolTarget, sourceBalance, targetBalance)
+            await AppDataSource.manager.save(newBalance)
 
-                return;
-            }
+            user.balances.push(newBalance)
+            await AppDataSource.manager.save(user)
         }
-        let newBalance = new TokenBalance(userAddress, tokenSymbolSource, tokenSymbolTarget, sourceBalance, targetBalance)
-        await AppDataSource.manager.save(newBalance)
-
-        user.balances.push(newBalance)
-        await AppDataSource.manager.save(user)
-
     } else {
         let newBalance = new TokenBalance(userAddress, tokenSymbolSource, tokenSymbolTarget, sourceBalance, targetBalance)
         await AppDataSource.manager.save(newBalance)

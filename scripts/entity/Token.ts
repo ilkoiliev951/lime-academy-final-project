@@ -16,7 +16,7 @@ export class Token {
 
     // Token Symbol on the other chain
     @Column()
-    mappedToTokenSymbol: string
+    mappedToTokenSymbol?: string
 
     @Column()
     tokenType: string
@@ -24,14 +24,12 @@ export class Token {
     @Column()
     chainId: string
 
-    @Column()
-    transactionVerified?: boolean
-
-    constructor(tokenSymbol: string, tokenName: string, tokenAddress: string, tokenType: string, chainId: string) {
+    constructor(tokenSymbol: string, tokenName: string, tokenAddress: string, tokenType: string, chainId: string, mappedToTokenSymbol: string) {
         this.tokenSymbol = tokenSymbol;
         this.tokenName = tokenName;
         this.tokenAddress = tokenAddress;
         this.tokenType = tokenType;
         this.chainId = chainId;
+        this.mappedToTokenSymbol = mappedToTokenSymbol;
     }
 }
