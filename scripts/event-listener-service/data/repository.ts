@@ -100,6 +100,18 @@ export async function getLastProcessedSourceBlock() {
     return lastProcessedBlock ? lastProcessedBlock.lastProcessedBlockId : null
 }
 
+export async function updateLastProcessedSourceBlock(lastBlockNumber: number) {
+    await AppDataSource.manager.update(BlockOnSource, {id:1}, {
+        lastProcessedBlockId: lastBlockNumber
+    })
+}
+
+export async function updateLastProcessedTargetBlock(lastBlockNumber: number) {
+    await AppDataSource.manager.update(BlockOnTarget, {id:1}, {
+        lastProcessedBlockId: lastBlockNumber
+    })
+}
+
 async function getTokenOnOtherChain (symbol: string) {
     const token1 = await AppDataSource.manager
         .createQueryBuilder(Token, "token")

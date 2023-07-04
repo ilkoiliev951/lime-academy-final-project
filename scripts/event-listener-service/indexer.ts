@@ -6,7 +6,11 @@ import {TokensMinted} from "../entity/TokensMinted";
 import {TokensBurnt} from "../entity/TokensBurnt";
 import {TokensLocked} from "../entity/TokensLocked";
 import {TokensReleased} from "../entity/TokensReleased";
-import {getLastProcessedSourceBlock, getLastProcessedTargetBlock} from "./data/repository";
+import {
+    getLastProcessedSourceBlock,
+    getLastProcessedTargetBlock,
+    updateLastProcessedTargetBlock
+} from "./data/repository";
 
 const {ethers} = require('ethers');
 const config = require('../../config.json')
@@ -34,47 +38,53 @@ const main = async () => {
 }
 
 async function registerSourceNetworkEventListeners() {
-    contractSource.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
+    contractSource.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp, {blockNumber}) => {
         console.log('Intercepted NewTokenCreated event')
         const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString(), tokenName.toString().replace('G', 'W'))
         await repository.saveNewTokenEvent(token)
+        await repository.updateLastProcessedSourceBlock(blockNumber)
     });
 
-    contractSource.on('TokenAmountLocked', async (user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp) => {
+    contractSource.on('TokenAmountLocked', async (user, tokenSymbol, tokenAddress, amount, lockedInContract, chainId, timestamp, {blockNumber}) => {
         console.log('Intercepted TokenAmountLocked event')
 
         const lockEvent: TokensLocked = new TokensLocked(tokenSymbol, tokenAddress, user, amount.toString(), chainId.toString(), lockedInContract.toString(), false, timestamp, true);
         await repository.saveLockedEvent(lockEvent);
+        await repository.updateLastProcessedSourceBlock(blockNumber)
     });
 
-    contractSource.on('TokenAmountReleased', async (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
+    contractSource.on('TokenAmountReleased', async (user, tokenSymbol, tokenAddress, amount, chainId, timestamp, {blockNumber}) => {
         console.log('Intercepted TokenAmountReleased event')
         const releaseEvent: TokensReleased = new TokensReleased(tokenSymbol, tokenAddress, user, amount, chainId.toString(), timestamp)
         await repository.saveReleaseEvent(releaseEvent);
         await repository.updateBurntEvent(user, amount.toString(), tokenSymbol)
+        await repository.updateLastProcessedSourceBlock(blockNumber)
     });
 
     console.log('Listening on EVM Bridge Source Contract')
 }
 
 async function registerTargetNetworkEventListeners() {
-    contractTarget.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp) => {
+    contractTarget.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp, {blockNumber}) => {
         console.log('Intercepted NewTokenCreated event')
         const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'generic', chainId.toString(), tokenName.toString().replace('W', 'G'))
         await repository.saveNewTokenEvent(token)
+        await repository.updateLastProcessedTargetBlock(blockNumber)
     });
 
-    contractTarget.on('TokenAmountMinted', async (user, tokenSymbol, tokenAddress, amount, chainId, timestamp) => {
+    contractTarget.on('TokenAmountMinted', async (user, tokenSymbol, tokenAddress, amount, chainId, timestamp, {blockNumber}) => {
         console.log('Intercepted TokenAmountMinted event')
         const mintEvent: TokensMinted = new TokensMinted(tokenSymbol, tokenAddress, user, amount.toString(), chainId, timestamp);
         await repository.saveMintEvent(mintEvent);
         await repository.updateLockedEvent(user, amount.toString(), tokenSymbol)
+        await repository.updateLastProcessedTargetBlock(blockNumber)
     });
 
-    contractTarget.on('TokenAmountBurned', async (user, tokenAddress, tokenSymbol, amount, chainId, timestamp) => {
+    contractTarget.on('TokenAmountBurned', async (user, tokenAddress, tokenSymbol, amount, chainId, timestamp, {blockNumber}) => {
         console.log('Intercepted TokenAmountBurned event')
         const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount, chainId, false, timestamp);
         await repository.saveBurntEvent(burntEvent);
+        await repository.updateLastProcessedTargetBlock(blockNumber)
     });
     console.log('Listening on EVM Bridge Target Contract')
 }
