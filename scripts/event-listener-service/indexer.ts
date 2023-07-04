@@ -24,9 +24,6 @@ const contractTarget = getContract(TARGET_NETWORK_TYPE, targetProvider);
 const sourceProvider = getWebSocketProvider(SOURCE_NETWORK_TYPE)
 const contractSource = getContract(SOURCE_NETWORK_TYPE, sourceProvider)
 
-let sourceListenerRegistered: boolean = false;
-let targetListenerRegistered: boolean = false;;
-
 const main = async () => {
     // Establish initial DB connection
     await repository.connect();
@@ -41,7 +38,6 @@ const main = async () => {
 }
 
 async function registerSourceNetworkEventListeners() {
-    if (!sourceListenerRegistered) {
         contractSource.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp, {blockNumber}) => {
             console.log('Intercepted NewTokenCreated event')
             const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'wrapped', chainId.toString(), tokenName.toString().replace('G', 'W'))
@@ -64,14 +60,10 @@ async function registerSourceNetworkEventListeners() {
             await repository.updateBurntEvent(user, amount.toString(), tokenSymbol)
             await repository.updateLastProcessedSourceBlock(blockNumber)
         });
-
-        sourceListenerRegistered = true;
         console.log('Listening on EVM Bridge Source Contract')
-    }
 }
 
 async function registerTargetNetworkEventListeners() {
-    if (!targetListenerRegistered) {
         contractTarget.on('NewTokenCreated', async (tokenSymbol, tokenName, tokenAddress, chainId, timestamp, {blockNumber}) => {
             console.log('Intercepted NewTokenCreated event')
             const token: Token = new Token(tokenSymbol, tokenName, tokenAddress, 'generic', chainId.toString(), tokenName.toString().replace('W', 'G'))
@@ -93,9 +85,7 @@ async function registerTargetNetworkEventListeners() {
             await repository.saveBurntEvent(burntEvent);
             await repository.updateLastProcessedTargetBlock(blockNumber)
         });
-        targetListenerRegistered = true;
         console.log('Listening on EVM Bridge Target Contract')
-    }
 }
 
 async function readBlocksOnTargetFrom(startingBlock: number | null) {
@@ -196,8 +186,6 @@ function getContract(networkType, provider) {
     }
     return new ethers.Contract(config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET, bridge.abi, provider);
 }
-
-main()
 
 main().catch((error) => {
     console.error(error);
