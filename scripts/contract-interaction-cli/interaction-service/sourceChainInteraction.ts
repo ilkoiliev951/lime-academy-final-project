@@ -66,10 +66,9 @@ export async function release(
     privateKey: string) {
 
     const provider = await providerPromise;
-
     const wallet = interactionUtils.getWallet(privateKey, provider);
 
-    await validator.validateReleaseRequest(tokenSymbol, tokenAddress, amount, wallet.address);
+    await validator.validateReleaseRequest(tokenSymbol, tokenAddress, amount.toString(), wallet.address);
     const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
     const releaseTx = await bridgeContract.release(amount, tokenAddress, tokenSymbol)

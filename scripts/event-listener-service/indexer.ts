@@ -79,7 +79,7 @@ async function registerTargetNetworkEventListeners() {
 
         contractTarget.on('TokenAmountBurned', async (user, tokenAddress, tokenSymbol, amount, chainId, timestamp, {blockNumber}) => {
             console.log('Intercepted TokenAmountBurned event')
-            const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount, chainId.toString(), false, timestamp.toString());
+            const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount.toString(), chainId.toString(), false, timestamp.toString());
             await repository.saveBurntEvent(burntEvent);
             await repository.updateLastProcessedTargetBlock(blockNumber, timestamp.toString())
         });
@@ -90,7 +90,7 @@ async function readBlocksOnTargetFrom(startingBlock: number | null) {
     if (startingBlock != null) {
         const provider = getWebSocketProvider(TARGET_NETWORK_TYPE)
         const logs = await provider.getLogs({
-            fromBlock: startingBlock,
+            fromBlock: startingBlock + 1,
             toBlock: provider.getBlockNumber(),
             address: config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET
         });
@@ -107,14 +107,17 @@ async function readBlocksOnTargetFrom(startingBlock: number | null) {
                     case 'createToken':
                         const decodedNewToken = iface.decodeEventLog("NewTokenCreated", logs[i].data);
                         await parser.parseNewTokenEvent(decodedNewToken, topics)
+                        await repository.updateLastProcessedTargetBlock(logs[i].blockNumber, decodedNewToken['timestamp'].toString())
                         break;
                     case 'mint':
                         const decodedMint = iface.decodeEventLog("TokenAmountMinted", logs[i].data);
                         await parser.parseMintEvent(decodedMint, topics)
+                        await repository.updateLastProcessedTargetBlock(logs[i].blockNumber, decodedMint['timestamp'].toString())
                         break;
                     case 'burnWithPermit':
                         const decodedBurn = iface.decodeEventLog("TokenAmountBurned", logs[i].data);
                         await parser.parseBurnEvent(decodedBurn, topics)
+                        await repository.updateLastProcessedTargetBlock(logs[i].blockNumber, decodedBurn['timestamp'].toString())
                         break;
                     default:
                         return;
@@ -132,7 +135,7 @@ async function readBlocksOnSourceFrom(startingBlock: number | null) {
     if (startingBlock != null) {
         const provider = getWebSocketProvider(SOURCE_NETWORK_TYPE)
         const logs = await provider.getLogs({
-            fromBlock: startingBlock,
+            fromBlock: startingBlock + 1,
             toBlock: provider.getBlockNumber(),
             address: config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE
         });
@@ -149,14 +152,17 @@ async function readBlocksOnSourceFrom(startingBlock: number | null) {
                     case 'createToken':
                         const decodedNewToken = iface.decodeEventLog("NewTokenCreated", logs[i].data);
                         await parser.parseNewTokenEvent(decodedNewToken, topics)
+                        await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedNewToken['timestamp'].toString())
                         break;
                     case 'lock':
                         const decodedLock = iface.decodeEventLog("TokenAmountLocked", logs[i].data);
                         await parser.parseDecodedLockEvent(decodedLock, topics)
+                        await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedLock['timestamp'].toString())
                         break;
                     case 'release':
                         const decodedRelease = iface.decodeEventLog("TokenAmountReleased", logs[i].data);
                         await parser.parseDecodedReleaseEvent(decodedRelease, topics)
+                        await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedRelease['timestamp'].toString())
                         break;
                     default:
                         return;

@@ -142,8 +142,6 @@ export async function parseMintEvent(decodedMintToken: any, topics) {
             timestamp.toString()
         )
 
-        console.log(mintEntity)
-
         await repository.saveMintEvent(mintEntity)
     }
 }

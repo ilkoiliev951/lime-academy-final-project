@@ -131,7 +131,8 @@ export async function updateLastProcessedTargetBlock(lastBlockNumber: number, ti
 
     if (blockEntity) {
         await AppDataSource.manager.update(BlockOnSource, {lastProcessedBlockId: blockEntity.lastProcessedBlockId}, {
-            lastProcessedBlockId: lastBlockNumber
+            lastProcessedBlockId: lastBlockNumber,
+            timestamp: timestamp
         })
         console.log('Updated block on target to DB with number: ' + lastBlockNumber)
     } else {

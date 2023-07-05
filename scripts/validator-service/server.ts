@@ -11,7 +11,6 @@ app.use(express.json());
 const validator = require('./data/dbValidator')
 validator.connect()
 
-
 app.post('/api/validator/validate-mint', async (req: Request, res: Response) => {
     const mintRequestIsValid = await validator.validateMint(req.body.tokenSymbol, req.body.tokenAddress, req.body.amount, req.body.user);
     if (mintRequestIsValid) {
@@ -22,11 +21,6 @@ app.post('/api/validator/validate-mint', async (req: Request, res: Response) => 
 });
 
 app.post('/api/validator/validate-burn', async (req: Request, res: Response) => {
-    console.log('=======')
-    console.log(req.body.tokenSymbol)
-    console.log(req.body.tokenAddress)
-    console.log(req.body.amount)
-    console.log(req.body.user)
     const burnRequestIsValid = await validator.validateBurn(req.body.tokenSymbol, req.body.tokenAddress, req.body.amount, req.body.user);
     if (burnRequestIsValid) {
         res.sendStatus(200);
