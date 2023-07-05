@@ -9,7 +9,6 @@ import {TokensReleased} from "../entity/TokensReleased";
 import {
     getLastProcessedSourceBlock,
     getLastProcessedTargetBlock,
-    updateLastProcessedTargetBlock
 } from "./data/repository";
 
 const {ethers} = require('ethers');
@@ -72,7 +71,7 @@ async function registerTargetNetworkEventListeners() {
 
         contractTarget.on('TokenAmountMinted', async (user, tokenSymbol, tokenAddress, amount, chainId, timestamp, {blockNumber}) => {
             console.log('Intercepted TokenAmountMinted event')
-            const mintEvent: TokensMinted = new TokensMinted(tokenSymbol, tokenAddress, user, amount.toString(), chainId, timestamp.toString());
+            const mintEvent: TokensMinted = new TokensMinted(tokenSymbol, tokenAddress, user, amount.toString(), chainId.toString(), timestamp.toString());
             await repository.saveMintEvent(mintEvent);
             await repository.updateLockedEvent(user, amount.toString(), tokenSymbol)
             await repository.updateLastProcessedTargetBlock(blockNumber, timestamp.toString())
@@ -80,7 +79,7 @@ async function registerTargetNetworkEventListeners() {
 
         contractTarget.on('TokenAmountBurned', async (user, tokenAddress, tokenSymbol, amount, chainId, timestamp, {blockNumber}) => {
             console.log('Intercepted TokenAmountBurned event')
-            const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount, chainId, false, timestamp.toString());
+            const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount, chainId.toString(), false, timestamp.toString());
             await repository.saveBurntEvent(burntEvent);
             await repository.updateLastProcessedTargetBlock(blockNumber, timestamp.toString())
         });

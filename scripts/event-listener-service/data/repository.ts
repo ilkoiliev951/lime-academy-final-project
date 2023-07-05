@@ -130,7 +130,7 @@ export async function updateLastProcessedTargetBlock(lastBlockNumber: number, ti
         .getOne()
 
     if (blockEntity) {
-        await AppDataSource.manager.update(BlockOnSource, {id: 1}, {
+        await AppDataSource.manager.update(BlockOnSource, {lastProcessedBlockId: blockEntity.lastProcessedBlockId}, {
             lastProcessedBlockId: lastBlockNumber
         })
         console.log('Updated block on target to DB with number: ' + lastBlockNumber)
