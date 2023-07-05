@@ -68,7 +68,13 @@ export async function parseNewTokenEvent(decodedNewToken: any, topics) {
         const tokenSymbol = decodedNewToken['tokenSymbol']
         const tokenName = decodedNewToken['tokenName']
         const chainId = decodedNewToken['chainId']
-        let tokenType = chainId==5 ? 'wrapped' : 'generic'
+        let tokenType;
+
+        if (chainId==5) {
+            tokenType = 'wrapped'
+        } else {
+            tokenType = 'generic'
+        }
 
         let mappedToTokenSymbol
         if(tokenType=='wrapped') {

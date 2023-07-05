@@ -72,20 +72,22 @@ app.post('/api/validator/update-balance', async (req: Request, res: Response) =>
     const wallet = await interactionUtils.getWallet(config.SETTINGS.ownerKey, provider);
     let sourceBalance = await interactionUtils.getUserSourceBalanceOnChain(wallet, sourceToken.tokenAddress, req.body.user)
 
-    const updatedOnChain = await updateUserBalanceOnChain(
+    const updatedInDB = await validator.updateUserBalance(
         req.body.user,
         sourceToken.tokenSymbol,
-        sourceBalance,
         targetToken.tokenSymbol,
+        sourceBalance,
         targetBalance
     );
 
-    if (updatedOnChain) {
-        const userBalanceUpdated = await validator.updateUserBalance(
+    console.log('updated in db' + updatedInDB)
+
+    if (updatedInDB) {
+        const userBalanceUpdated = await updateUserBalanceOnChain(
             req.body.user,
             sourceToken.tokenSymbol,
-            targetToken.tokenSymbol,
             sourceBalance,
+            targetToken.tokenSymbol,
             targetBalance
         );
 
@@ -94,6 +96,7 @@ app.post('/api/validator/update-balance', async (req: Request, res: Response) =>
             return;
         }
     }
+    console.log('Failed updating user balance after tx.')
     res.sendStatus(406);
 });
 

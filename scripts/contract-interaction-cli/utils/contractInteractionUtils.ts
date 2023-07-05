@@ -78,13 +78,9 @@ function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function calculatePreTransactionEstimates(amount: BigNumber, tokenSymbol: string, network: string,  customGasLimit?: number) {
-    const maxGasInEth = calculateApproximateGasPriceInETH(network, customGasLimit);
-    const bridgeFee = calculateFee(amount);
-
+export async function calculatePreTransactionEstimates(bridgeFee, maxGasInEth) {
     console.info('Estimated Bridge Fee: ' + bridgeFee);
     console.info('Approximate gas estimate: ' + maxGasInEth);
-    console.info('Do you wish to proceed? (y/n)');
 }
 
 export async function getUserSourceBalanceOnChain (wallet, tokenAddress, userAddress) {

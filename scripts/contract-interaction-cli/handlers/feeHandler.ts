@@ -5,7 +5,6 @@ const interactionUtils = require('./../utils/contractInteractionUtils')
 const config = require('./../../../config.json')
 
 export function calculateFee(transactionAmount: BigNumber) {
-    console.log(transactionAmount)
     return transactionAmount.div(BigNumber.from(1000))
 }
 

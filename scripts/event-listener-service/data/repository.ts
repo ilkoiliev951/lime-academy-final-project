@@ -21,12 +21,7 @@ export async function saveNewTokenEvent(newTokenEvent: Token): Promise<Token> {
 }
 
 export async function saveLockedEvent(lockEvent: TokensLocked) {
-    let res = await AppDataSource.manager.findOneBy(TokensLocked, {
-        timestamp: lockEvent.timestamp,
-    })
-    if (!res) {
-        await AppDataSource.manager.save(lockEvent)
-    }
+    await AppDataSource.manager.save(lockEvent)
     console.log('Processed lock event in DB')
 }
 
@@ -89,7 +84,11 @@ export async function getLastProcessedTargetBlock() {
         .createQueryBuilder(BlockOnTarget, "block")
         .where("block.id!=0")
         .getOne()
-    return lastProcessedBlock ? lastProcessedBlock.lastProcessedBlockId : null
+
+    if (lastProcessedBlock) {
+        return lastProcessedBlock.lastProcessedBlockId
+    }
+    return null;
 }
 
 export async function getLastProcessedSourceBlock() {
@@ -97,19 +96,49 @@ export async function getLastProcessedSourceBlock() {
         .createQueryBuilder(BlockOnSource, "block")
         .where("block.id!=0")
         .getOne()
-    return lastProcessedBlock ? lastProcessedBlock.lastProcessedBlockId : null
+
+    if (lastProcessedBlock) {
+        return lastProcessedBlock.lastProcessedBlockId
+    }
+    return null;
 }
 
-export async function updateLastProcessedSourceBlock(lastBlockNumber: number) {
-    await AppDataSource.manager.update(BlockOnSource, {id:1}, {
-        lastProcessedBlockId: lastBlockNumber
-    })
+export async function updateLastProcessedSourceBlock(lastBlockNumber: number, timestamp: string) {
+    const blockEntity = await AppDataSource.manager
+        .createQueryBuilder(BlockOnSource, "block")
+        .where("block.id!=0")
+        .getOne()
+
+    if (blockEntity) {
+        await AppDataSource.manager.update(BlockOnSource, {lastProcessedBlockId: blockEntity.lastProcessedBlockId},
+            {
+            lastProcessedBlockId: lastBlockNumber,
+            timestamp: timestamp
+        })
+        console.log('Updated block on source to DB with number: ' + lastBlockNumber)
+    } else {
+        const blockOnSource = new BlockOnSource(lastBlockNumber, timestamp)
+        await AppDataSource.manager.save(blockOnSource)
+        console.log('Saved block on source to DB with number: ' + lastBlockNumber)
+    }
 }
 
-export async function updateLastProcessedTargetBlock(lastBlockNumber: number) {
-    await AppDataSource.manager.update(BlockOnTarget, {id:1}, {
-        lastProcessedBlockId: lastBlockNumber
-    })
+export async function updateLastProcessedTargetBlock(lastBlockNumber: number, timestamp: string) {
+    const blockEntity = await AppDataSource.manager
+        .createQueryBuilder(BlockOnTarget, "block")
+        .where("block.id!=0")
+        .getOne()
+
+    if (blockEntity) {
+        await AppDataSource.manager.update(BlockOnSource, {id: 1}, {
+            lastProcessedBlockId: lastBlockNumber
+        })
+        console.log('Updated block on target to DB with number: ' + lastBlockNumber)
+    } else {
+        const blockOnTarget = new BlockOnTarget(lastBlockNumber, timestamp)
+        await AppDataSource.manager.save(blockOnTarget)
+        console.log('Saved block on target to DB with number: ' + lastBlockNumber)
+    }
 }
 
 async function getTokenOnOtherChain (symbol: string) {

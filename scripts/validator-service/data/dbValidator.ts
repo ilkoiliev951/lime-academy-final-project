@@ -111,38 +111,46 @@ export async function updateUserBalance(
     targetBalance
      ) {
 
-    const user = await AppDataSource.manager
-        .createQueryBuilder(User, "user")
-        .where("user.userAddress = :userAddress", { userAddress: userAddress})
-        .getOne()
+    try {
+        const user = await AppDataSource.manager
+            .createQueryBuilder(User, "user")
+            .where("user.userAddress = :userAddress", {userAddress: userAddress})
+            .getOne()
 
-    const userBalance = await AppDataSource.manager
-        .createQueryBuilder(TokenBalance, "balance")
-        .where("balance.userAddress=:userAddress", { userAddress: userAddress})
-        .andWhere("tokenSymbol.tokenSymbolTarget=:tokenSymbolTarget OR tokenSymbol.tokenSymbolSource=:tokenSymbolSource",
-            {tokenSymbolTarget: tokenSymbolTarget, tokenSymbolSource: tokenSymbolSource})
-        .getOne()
+        const userBalance = await AppDataSource.manager
+            .createQueryBuilder(TokenBalance, "balance")
+            .where("balance.userAddress=:userAddress", {userAddress: userAddress})
+            .andWhere("balance.tokenSymbolTarget=:tokenSymbolTarget OR balance.tokenSymbolSource=:tokenSymbolSource",
+                {tokenSymbolTarget: tokenSymbolTarget, tokenSymbolSource: tokenSymbolSource})
+            .getOne()
 
-    if (user) {
-        if (userBalance) {
-            await AppDataSource.manager.update(TokenBalance, {id: userBalance.id},
-                {userBalanceSource: sourceBalance, userBalanceTarget: targetBalance})
+        if (user) {
+            if (userBalance) {
+                console.log('in first')
+                await AppDataSource.manager.update(TokenBalance, {id: userBalance.id},
+                    {userBalanceSource: sourceBalance, userBalanceTarget: targetBalance})
+                return true
+            } else {
+                console.log('in second')
+                let newBalance = new TokenBalance(userAddress, tokenSymbolSource, tokenSymbolTarget, sourceBalance, targetBalance)
+                await AppDataSource.manager.save(newBalance)
+
+                user.balances.push(newBalance)
+                await AppDataSource.manager.save(user)
+                return true
+            }
         } else {
+            console.log('in third')
             let newBalance = new TokenBalance(userAddress, tokenSymbolSource, tokenSymbolTarget, sourceBalance, targetBalance)
             await AppDataSource.manager.save(newBalance)
 
-            user.balances.push(newBalance)
+            const user = new User(userAddress, [newBalance])
             await AppDataSource.manager.save(user)
+            return true
         }
-    } else {
-        let newBalance = new TokenBalance(userAddress, tokenSymbolSource, tokenSymbolTarget, sourceBalance, targetBalance)
-        await AppDataSource.manager.save(newBalance)
-
-        const user = new User(userAddress, [newBalance])
-        await AppDataSource.manager.save(user)
+    } catch (e) {
+        return false;
     }
-
-    return false;
 }
 
 export async function getTokenOnOtherChain (symbol: string) {
