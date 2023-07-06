@@ -1,16 +1,71 @@
 import express, {Request, Response} from 'express';
 import {updateUserBalanceOnChain} from "./contractInteraction";
-
+import {generateNonce, SiweMessage} from "siwe";
+import Session from 'express-session'
 const interactionUtils = require('./../contract-interaction-cli/utils/contractInteractionUtils')
 const config = require('./config/config.json')
+const validator = require('./data/dbValidator')
+validator.connect()
 
 const port = 8082;
 const app = express();
 app.use(express.json());
 
-const validator = require('./data/dbValidator')
-validator.connect()
+// extending the SessionData interface in order to adapt to TS
+declare module 'express-session' {
+    interface SessionData {
+        siwe: SiweMessage,
+        nonce: string
+    }
+}
 
+app.use(Session({
+    name: 'siwe',
+    secret: "lime-siwe-secret",
+    resave: true,
+    saveUninitialized: true,
+    cookie: { secure: false, sameSite: true }
+}));
+
+app.get('/nonce', async function (req, res) {
+    const nonce = generateNonce()
+    req.session.nonce = nonce;
+    res.json(nonce)
+});
+
+app.post('/verify', async function (req: Request, res: Response) {
+    try {
+        if (!req.body.message) {
+            res.status(422).json({message: 'Expected prepareMessage object as body.'});
+            return;
+        }
+
+        console.log(req.body)
+        console.log(req.body.message.address)
+
+        let SIWEObject = new SiweMessage(req.body.message);
+        console.log(JSON.stringify(SIWEObject))
+        const { data: message } = await SIWEObject.verify({ signature: req.body.signature, nonce: req.session.nonce });
+        req.session.siwe = message;
+        req.session.cookie.expires = new Date(message.expirationTime);
+        req.session.save(() => res.status(200).send(true));
+    } catch (e) {
+        req.session.siwe = null;
+        req.session.nonce = null;
+        console.error(e);
+        req.session.save(() => res.status(500).json({ message: e }));
+    }
+});
+
+app.get('/personal_information', function (req, res) {
+    if (!req.session.siwe) {
+        res.status(401).json({ message: 'You have to first sign_in' });
+        return;
+    }
+    console.log("User is authenticated!");
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(`You are authenticated and your address is: ${req.session.siwe.address}`);
+});
 
 app.get('/api/fetch-locked-awaiting', async (req: Request, res: Response) => {
     const awaitingLockedEvents = await validator.getAllActiveLockEvents();
@@ -27,7 +82,7 @@ app.post('/api/fetch-bridged-by-user', async (req: Request, res: Response) => {
     res.json(allTransfers)
 });
 
-app.get('/api/fetch-bridged-by-token', async (req: Request, res: Response) => {
+app.get('/api/fetch-all-bridged', async (req: Request, res: Response) => {
     const awaitingBurntEvents = await validator.getAllActiveBurnEvents();
     res.json(awaitingBurntEvents)
 });

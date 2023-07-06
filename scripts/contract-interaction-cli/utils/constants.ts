@@ -24,6 +24,7 @@ export const PERMIT_DEADLINE = ethers.constants.MaxUint256;
 
 // URLs
 export const VALIDATOR_BASE_URL = 'http://localhost:8082/api/validator/';
+export const AUTH_BASE_URL = 'http://localhost:8082/'
 
 // Logger
 // export const LOGGER = new console.Console(fs.createWriteStream("cli.log"));

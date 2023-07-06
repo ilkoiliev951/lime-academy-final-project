@@ -1,7 +1,5 @@
 import {BigNumber, ethers, Wallet} from "ethers";
 import secrets from "../../../secrets.json";
-import {calculateApproximateGasPriceInETH} from "../handlers/gasHandler";
-import {calculateFee} from "../handlers/feeHandler";
 const bridge = require("./../../../artifacts/contracts/EVMBridge.sol/EVMBridge.json");
 const genericERC20 = require("../../../artifacts/contracts/GenericERC20.sol/GenericERC20.json");
 const wrappedERC20 = require("../../../artifacts/contracts/WrappedERC20.sol/WrappedERC20.json");
