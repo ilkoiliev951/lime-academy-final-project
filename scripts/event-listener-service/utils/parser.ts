@@ -57,6 +57,7 @@ export async function parseDecodedReleaseEvent(decodedRelease: any, topics) {
         console.log(releaseEntity)
 
         await repository.saveReleaseEvent(releaseEntity)
+        await repository.updateBurntEvent(userAddress, amount, tokenSymbol)
     }
 }
 
@@ -143,5 +144,6 @@ export async function parseMintEvent(decodedMintToken: any, topics) {
         )
 
         await repository.saveMintEvent(mintEntity)
+        await repository.updateLockedEvent(userAddress, amount, tokenSymbol)
     }
 }

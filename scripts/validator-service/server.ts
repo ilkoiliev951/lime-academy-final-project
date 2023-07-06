@@ -11,6 +11,27 @@ app.use(express.json());
 const validator = require('./data/dbValidator')
 validator.connect()
 
+
+app.get('/api/fetch-locked-awaiting', async (req: Request, res: Response) => {
+    const awaitingLockedEvents = await validator.getAllActiveLockEvents();
+    res.json(awaitingLockedEvents)
+});
+
+app.get('/api/fetch-burnt-awaiting', async (req: Request, res: Response) => {
+    const awaitingBurntEvents = await validator.getAllActiveBurnEvents();
+    res.json(awaitingBurntEvents)
+});
+
+app.post('/api/fetch-bridged-by-user', async (req: Request, res: Response) => {
+    const allTransfers = await validator.getAllTransferredTokensByAddress(req.body.user);
+    res.json(allTransfers)
+});
+
+app.get('/api/fetch-bridged-by-token', async (req: Request, res: Response) => {
+    const awaitingBurntEvents = await validator.getAllActiveBurnEvents();
+    res.json(awaitingBurntEvents)
+});
+
 app.post('/api/validator/validate-mint', async (req: Request, res: Response) => {
     const mintRequestIsValid = await validator.validateMint(req.body.tokenSymbol, req.body.tokenAddress, req.body.amount, req.body.user);
     if (mintRequestIsValid) {
@@ -44,8 +65,6 @@ app.post('/api/validator/validate-release', async (req: Request, res: Response) 
 app.post('/api/validator/update-balance', async (req: Request, res: Response) => {
     let targetToken;
     let sourceToken;
-
-    console.log(req.body.isSourceOperation)
 
     if (req.body.isSourceOperation) {
         targetToken = await validator.getTokenOnOtherChain(req.body.tokenSymbolSource)

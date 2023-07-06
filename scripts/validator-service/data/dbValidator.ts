@@ -6,6 +6,9 @@ import {AppDataSource} from "./dataSource";
 import {TokenBalance} from "../../entity/TokenBalance";
 import {TokensBurnt} from "../../entity/TokensBurnt";
 import {BigNumber} from "ethers";
+import {TokensBridgedResponseDTO} from "../../utils/dtos/TokensBridgedResponseDTO";
+
+const mapper = require('./../../utils/helpers/mapper')
 
 export async function connect () {
     try {
@@ -18,7 +21,7 @@ export async function connect () {
 export async function validateMint(tokenSymbol: string, tokenAddress: string, amount: string, userAddress: string) {
     const correspondingToken = await getTokenOnOtherChain(tokenSymbol)
     if (correspondingToken) {
-        const userLockEvents = await getActiveLockEvent(userAddress, correspondingToken.tokenSymbol, amount)
+        const userLockEvents = await getActiveLockEvents(userAddress, correspondingToken.tokenSymbol, amount)
         if (userLockEvents.length!==0) {
             return true;
         }
@@ -46,7 +49,7 @@ export async function validateRelease(tokenSymbol: string, tokenAddress: string,
     console.log(amount)
     console.log(userAddress)
     if (correspondingToken) {
-        const userBurnEvents = await getActiveBurnEvent(userAddress, correspondingToken.tokenSymbol, amount)
+        const userBurnEvents = await getActiveBurnEvents(userAddress, correspondingToken.tokenSymbol, amount)
         console.log(userBurnEvents)
         if (userBurnEvents.length > 0) {
             return true;
@@ -55,10 +58,10 @@ export async function validateRelease(tokenSymbol: string, tokenAddress: string,
     return false;
 }
 
-async function getActiveLockEvent(address: string, tokenSymbol: string, amount: string) {
+export async function getActiveLockEvents(address: string, tokenSymbol: string, amount: string) {
     const activeLockEvents =  await AppDataSource.manager
         .createQueryBuilder(TokensLocked, "event")
-        .where("event.userAddress=:address", { address: address })
+        .where("event.userAddress ILIKE :address", { address: address })
         .andWhere("event.tokenSymbol=:tokenSymbol", {tokenSymbol: tokenSymbol})
         .andWhere("event.amount=:amount", {amount: amount})
         .andWhere('event.claimedOnTarget IS NOT TRUE')
@@ -72,28 +75,22 @@ async function getActiveLockEvent(address: string, tokenSymbol: string, amount: 
     return [];
 }
 
- async function getUserBalanceBySymbol(address: string, tokenSymbol: string) {
-     const userBalance = await AppDataSource.manager
-         .createQueryBuilder(TokenBalance, "balance")
-         .where("balance.userAddress = :address", { address: address })
-         .andWhere(
-             "balance.tokenSymbolSource = :tokenSymbol OR balance.tokenSymbolTarget = :tokenSymbol",
-             { tokenSymbol: tokenSymbol }
-         )
-         .getOne();
+export async function getAllActiveLockEvents() {
+    const activeLockEvents =  await AppDataSource.manager
+        .createQueryBuilder(TokensLocked, "event")
+        .where('event.claimedOnTarget IS NOT TRUE')
+        .getMany();
 
-     console.log(userBalance)
-
-     if (userBalance) {
-        return userBalance;
+    if (activeLockEvents) {
+        return activeLockEvents;
     }
-    throw new EntityNotFoundException('User or event with the given address was not found.')
+    return [];
 }
 
-async function getActiveBurnEvent(address: string, tokenSymbol: string, amount: string) {
+export async function getActiveBurnEvents(address: string, tokenSymbol: string, amount: string) {
     const activeBurntEvents = await AppDataSource.manager
         .createQueryBuilder(TokensBurnt, "event")
-        .where("event.userAddress=:address", { address: address })
+        .where("event.userAddress ILIKE :address", { address: address })
         .andWhere("event.tokenSymbol =:tokenSymbol", {tokenSymbol: tokenSymbol})
         .andWhere("event.amount=:amount", {amount: amount})
         .andWhere('event.releasedOnSource IS NOT TRUE')
@@ -105,6 +102,58 @@ async function getActiveBurnEvent(address: string, tokenSymbol: string, amount: 
         return activeBurntEvents;
     }
     return [];
+}
+
+export async function getAllActiveBurnEvents() {
+    const activeBurntEvents = await AppDataSource.manager
+        .createQueryBuilder(TokensBurnt, "event")
+        .where('event.releasedOnSource IS NOT TRUE')
+        .getMany();
+
+    if (activeBurntEvents) {
+        return activeBurntEvents;
+    }
+    return [];
+}
+
+export async function getAllTransferredTokensByAddress(address: string) {
+    const result = new Array()
+
+    // Using I like to performa case-insensitive query,
+    // since addresses from decoded events might differ
+    const releasedBurntEvents = await AppDataSource.manager
+        .createQueryBuilder(TokensBurnt, "event")
+        .where('event.releasedOnSource IS TRUE')
+        .andWhere('event.userAddress ILIKE :address', {address: address})
+        .getMany();
+
+    mapper.mapBurnEventsToUserTransferredResponse(releasedBurntEvents, result)
+
+    const claimedLockedEvents = await AppDataSource.manager
+        .createQueryBuilder(TokensLocked, "event")
+        .where('event.claimedOnTarget IS TRUE')
+        .andWhere('event.userAddress ILIKE :address', {address: address})
+        .getMany();
+
+    mapper.mapLockEventsToUserTransferredResponse(claimedLockedEvents, result)
+
+    return result;
+}
+
+async function getUserBalanceBySymbol(address: string, tokenSymbol: string) {
+     const userBalance = await AppDataSource.manager
+         .createQueryBuilder(TokenBalance, "balance")
+         .where("balance.userAddress = :address", { address: address })
+         .andWhere(
+             "balance.tokenSymbolSource = :tokenSymbol OR balance.tokenSymbolTarget = :tokenSymbol",
+             { tokenSymbol: tokenSymbol }
+         )
+         .getOne();
+
+     if (userBalance) {
+        return userBalance;
+    }
+    throw new EntityNotFoundException('User or event with the given address was not found.')
 }
 
 export async function updateUserBalance(
@@ -170,8 +219,3 @@ export async function getTokenOnOtherChain (symbol: string) {
         return token2;
     }
 }
-
-
-
-
-

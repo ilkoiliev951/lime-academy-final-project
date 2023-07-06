@@ -30,7 +30,7 @@ export async function updateLockedEvent(userAddress, amount, tokenSymbol) {
     if (token2) {
         const lockEvent = await AppDataSource.manager
             .createQueryBuilder(TokensLocked, "event")
-            .where("event.userAddress=:address", {address: userAddress})
+            .where("event.userAddress ILIKE :address", {address: userAddress})
             .andWhere("event.tokenSymbol=:tokenSymbol", {tokenSymbol: token2.tokenSymbol})
             .andWhere("event.amount=:amount", {amount: amount})
             .andWhere('event.active IS TRUE')
@@ -55,7 +55,7 @@ export async function updateBurntEvent (userAddress, amount, tokenSymbol){
     if (token2) {
         const burnEvent = await AppDataSource.manager
             .createQueryBuilder(TokensBurnt, "event")
-            .where("event.userAddress=:address", {address: userAddress})
+            .where("event.userAddress ILIKE :address", {address: userAddress})
             .andWhere("event.tokenSymbol=:tokenSymbol", {tokenSymbol: token2.tokenSymbol})
             .andWhere("event.amount=:amount", {amount: amount})
             .andWhere('event.releasedOnSource IS FALSE')
