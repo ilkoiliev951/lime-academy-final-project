@@ -23,9 +23,6 @@ export class TokensReleased {
     @Column()
     timestamp: string
 
-    @Column()
-    transactionVerified?: boolean
-
     constructor (tokenSymbol: string, tokenAddress: string, userAddress: string, amount: string, chainId: string, timestamp: string) {
         this.tokenSymbol = tokenSymbol;
         this.tokenAddress = tokenAddress;

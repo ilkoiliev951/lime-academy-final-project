@@ -54,7 +54,7 @@ export async function updateBurntEvent (userAddress, amount, tokenSymbol){
     const token2 = await getTokenOnOtherChain(tokenSymbol)
     if (token2) {
         const burnEvent = await AppDataSource.manager
-            .createQueryBuilder(TokensLocked, "event")
+            .createQueryBuilder(TokensBurnt, "event")
             .where("event.userAddress=:address", {address: userAddress})
             .andWhere("event.tokenSymbol=:tokenSymbol", {tokenSymbol: token2.tokenSymbol})
             .andWhere("event.amount=:amount", {amount: amount})

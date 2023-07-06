@@ -30,11 +30,14 @@ app.post('/api/validator/validate-burn', async (req: Request, res: Response) => 
 });
 
 app.post('/api/validator/validate-release', async (req: Request, res: Response) => {
+    console.log('here')
     const releaseRequestIsValid = await validator.validateRelease(req.body.tokenSymbol, req.body.tokenAddress, req.body.amount, req.body.user);
     if (releaseRequestIsValid) {
+        console.log('valid')
         res.sendStatus(200);
         return;
     }
+    console.log('invalid');
     res.sendStatus(406);
 });
 

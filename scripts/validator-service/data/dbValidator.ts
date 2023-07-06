@@ -42,9 +42,13 @@ export async function validateBurn(tokenSymbol: string, tokenAddress: string, am
 
 export async function validateRelease(tokenSymbol: string, tokenAddress: string, amount: string, userAddress: string) {
     const correspondingToken = await getTokenOnOtherChain(tokenSymbol)
+    console.log(correspondingToken)
+    console.log(amount)
+    console.log(userAddress)
     if (correspondingToken) {
         const userBurnEvents = await getActiveBurnEvent(userAddress, correspondingToken.tokenSymbol, amount)
-        if (userBurnEvents.length!==0) {
+        console.log(userBurnEvents)
+        if (userBurnEvents.length > 0) {
             return true;
         }
     }
@@ -100,7 +104,7 @@ async function getActiveBurnEvent(address: string, tokenSymbol: string, amount: 
         // we'll take the first - it is enough to validate the call
         return activeBurntEvents;
     }
-    throw new EntityNotFoundException('User or event with the given address was not found.')
+    return [];
 }
 
 export async function updateUserBalance(
@@ -126,12 +130,10 @@ export async function updateUserBalance(
 
         if (user) {
             if (userBalance) {
-                console.log('in first')
                 await AppDataSource.manager.update(TokenBalance, {id: userBalance.id},
                     {userBalanceSource: sourceBalance, userBalanceTarget: targetBalance})
                 return true
             } else {
-                console.log('in second')
                 let newBalance = new TokenBalance(userAddress, tokenSymbolSource, tokenSymbolTarget, sourceBalance, targetBalance)
                 await AppDataSource.manager.save(newBalance)
 
@@ -140,7 +142,6 @@ export async function updateUserBalance(
                 return true
             }
         } else {
-            console.log('in third')
             let newBalance = new TokenBalance(userAddress, tokenSymbolSource, tokenSymbolTarget, sourceBalance, targetBalance)
             await AppDataSource.manager.save(newBalance)
 

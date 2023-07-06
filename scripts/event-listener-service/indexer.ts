@@ -53,7 +53,7 @@ async function registerSourceNetworkEventListeners() {
 
         contractSource.on('TokenAmountReleased', async (user, tokenSymbol, tokenAddress, amount, chainId, timestamp, {blockNumber}) => {
             console.log('Intercepted TokenAmountReleased event')
-            const releaseEvent: TokensReleased = new TokensReleased(tokenSymbol, tokenAddress, user, amount, chainId.toString(), timestamp.toString())
+            const releaseEvent: TokensReleased = new TokensReleased(tokenSymbol, tokenAddress, user, amount.toString(), chainId.toString(), timestamp.toString())
             await repository.saveReleaseEvent(releaseEvent);
             await repository.updateBurntEvent(user, amount.toString(), tokenSymbol)
             await repository.updateLastProcessedSourceBlock(blockNumber, timestamp.toString())
@@ -77,7 +77,7 @@ async function registerTargetNetworkEventListeners() {
             await repository.updateLastProcessedTargetBlock(blockNumber, timestamp.toString())
         });
 
-        contractTarget.on('TokenAmountBurned', async (user, tokenAddress, tokenSymbol, amount, chainId, timestamp, {blockNumber}) => {
+        contractTarget.on('TokenAmountBurned', async (user, tokenSymbol, tokenAddress, amount, chainId, timestamp, {blockNumber}) => {
             console.log('Intercepted TokenAmountBurned event')
             const burntEvent: TokensBurnt = new TokensBurnt(tokenSymbol, tokenAddress, user, amount.toString(), chainId.toString(), false, timestamp.toString());
             await repository.saveBurntEvent(burntEvent);

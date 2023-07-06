@@ -66,18 +66,22 @@ export async function release(
     privateKey: string) {
 
     const provider = await providerPromise;
-    const wallet = interactionUtils.getWallet(privateKey, provider);
+    const wallet = await interactionUtils.getWallet(privateKey, provider);
 
-    await validator.validateReleaseRequest(tokenSymbol, tokenAddress, amount.toString(), wallet.address);
-    const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
+    const releaseIsValid = await validator.validateReleaseRequest(tokenSymbol, tokenAddress, amount.toString(), wallet.address);
+    if (releaseIsValid) {
+        const bridgeContract = interactionUtils.getBridgeContract(wallet, contractAddress);
 
-    const releaseTx = await bridgeContract.release(amount, tokenAddress, tokenSymbol)
-    await releaseTx.wait()
+        const releaseTx = await bridgeContract.release(amount, tokenAddress, tokenSymbol)
+        await releaseTx.wait()
 
-    const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, releaseTx.hash)
-    if (transactionComplete) {
-        await validator.updateUserBalanceRequest(wallet.address, tokenSymbol, tokenAddress, '', '',  true)
-        printTransactionOutput(releaseTx)
+        const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, releaseTx.hash)
+        if (transactionComplete) {
+            await validator.updateUserBalanceRequest(wallet.address, amount.toString(), tokenSymbol, tokenAddress, '', '', true)
+            printTransactionOutput(releaseTx)
+        }
+    } else {
+        console.log('Release transaction validation failed')
     }
 }
 
