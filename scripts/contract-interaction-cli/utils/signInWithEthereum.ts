@@ -120,7 +120,7 @@ export async function userAuthenticated(nonce) {
         sessionHash: getSessionHash(nonce)
     }
 
-    console.log('Hash: ' + reqBody.sessionHash + 'for nonce: ' + nonce)
+    console.log('Hash: ' + reqBody.sessionHash + ' for nonce: ' + nonce)
 
     const res =  new Promise((resolve, reject) => {
         request({
