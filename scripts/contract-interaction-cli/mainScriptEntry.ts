@@ -4,24 +4,30 @@ import {InvalidCommandInputException} from './../utils/exceptions/InvalidCommand
 import {lockWithPermit, release} from "./interaction-service/sourceChainInteraction"
 import {burnWithPermit, mint} from "./interaction-service/targetChainInteraction"
 import {BigNumber} from "ethers";
+import {signInWithEthereum} from "./utils/signInWithEthereum";
 
+const secrets = require('./../../secrets.json')
 const process = require('process');
 const ethers = require('ethers');
 
 export async function main() {
     let mainCommand: string = process.argv[2];
-    let userPrivateKey: string = process.argv[3];
+    let userPrivateKey: string = secrets.PRIVATE_KEY
 
     isNullUndefined(mainCommand)
     isNullUndefined(userPrivateKey)
     isValidPrivateKey(userPrivateKey)
 
     switch (mainCommand) {
+        case COMMANDS.LOGIN:
+            await signInWithEthereum(new ethers.Wallet(userPrivateKey))
+        case COMMANDS.LOGOUT:
+            await signOut(new ethers.Wallet(userPrivateKey))
         case COMMANDS.LOCK:
             if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.LOCK)) {
-                let tokenSymbol  = process.argv[4];
-                let tokenAddress = process.argv[5];
-                let amount = BigNumber.from(process.argv[6]);
+                let tokenSymbol  = process.argv[3];
+                let tokenAddress = process.argv[4];
+                let amount = BigNumber.from(process.argv[5]);
                 await lockWithPermit(tokenSymbol, tokenAddress, amount, userPrivateKey)
             }
             break;

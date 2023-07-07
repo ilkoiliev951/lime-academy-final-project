@@ -1,8 +1,8 @@
 import express, {Request, Response} from 'express';
-import {updateUserBalanceOnChain} from "./contractInteraction";
+import {updateUserBalanceOnChain} from "./handlers/contractInteraction";
 import {generateNonce, SiweMessage} from "siwe";
 import Session from 'express-session'
-const interactionUtils = require('./../contract-interaction-cli/utils/contractInteractionUtils')
+const interactionUtils = require('../contract-interaction-cli/utils/contractInteractionUtils')
 const config = require('./config/config.json')
 const validator = require('./data/dbValidator')
 validator.connect()
@@ -44,7 +44,6 @@ app.post('/verify', async function (req: Request, res: Response) {
         console.log(req.body.message.address)
 
         let SIWEObject = new SiweMessage(req.body.message);
-        console.log(JSON.stringify(SIWEObject))
         const { data: message } = await SIWEObject.verify({ signature: req.body.signature, nonce: req.session.nonce });
         req.session.siwe = message;
         req.session.cookie.expires = new Date(message.expirationTime);
@@ -65,6 +64,10 @@ app.get('/personal_information', function (req, res) {
     console.log("User is authenticated!");
     res.setHeader('Content-Type', 'text/plain');
     res.send(`You are authenticated and your address is: ${req.session.siwe.address}`);
+});
+
+app.post('/logout', async function (req: Request, res: Response) {
+
 });
 
 app.get('/api/fetch-locked-awaiting', async (req: Request, res: Response) => {

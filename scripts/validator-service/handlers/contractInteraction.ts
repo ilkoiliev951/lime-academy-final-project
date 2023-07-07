@@ -1,7 +1,7 @@
-import {EVMBridge} from "../../typechain-types";
+import {EVMBridge} from "../../../typechain-types";
 
-const interactionUtils = require('./../contract-interaction-cli/utils/contractInteractionUtils')
-const config = require('./config/config.json')
+const interactionUtils = require('../../contract-interaction-cli/utils/contractInteractionUtils')
+const config = require('../config/config.json')
 
 export async function updateUserBalanceOnChain (
     userAddress,

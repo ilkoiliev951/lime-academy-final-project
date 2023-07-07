@@ -72,3 +72,39 @@ export async function signInWithEthereum(wallet: Wallet) {
     });
 }
 
+export async function signOut(wallet: Wallet) {
+    let endpoint = AUTH_BASE_URL + 'logout';
+    const address = wallet.address;
+    const message = await createSiweMessage(address, 'lime-siwe-secret');
+    const signature = await wallet.signMessage(message);
+    const reqBody = {
+        signature: signature.toString(),
+        message: message
+    }
+
+    const res =  new Promise((resolve, reject) => {
+        request({
+            url: endpoint,
+            method: "POST",
+            json: true,
+            body: reqBody
+        }, (error, response) => {
+            if (error) {
+                console.error(error);
+                reject('');
+            } else {
+                if (response.statusCode === 200) {
+                    resolve(response);
+                } else {
+                    reject('');
+                }
+            }
+        });
+    });
+}
+
+export async function userAuthenticated(wallet: Wallet): Promise<boolean> {
+
+
+
+}

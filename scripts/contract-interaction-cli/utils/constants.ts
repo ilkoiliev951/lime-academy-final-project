@@ -6,6 +6,8 @@ export const COMMANDS = {
     CLAIM: 'claim',
     BURN: 'burn',
     RELEASE: 'release',
+    LOGIN: 'login',
+    LOGOUT: 'logout'
 } as const;
 
 type CommandKey = keyof typeof COMMANDS;
@@ -15,6 +17,8 @@ export const COMMAND_ELEMENT_COUNT_DICT: Record<CommandKey, number> = {
     CLAIM: 4, // stands for mint
     BURN: 4,
     RELEASE: 5,
+    LOGIN: 0,
+    LOGOUT: 1
 };
 
 export const SOURCE_CHAIN_ID = BigNumber.from(11155111);

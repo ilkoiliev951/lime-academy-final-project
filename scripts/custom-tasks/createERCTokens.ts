@@ -9,26 +9,23 @@ const utils = require('./../contract-interaction-cli/utils/contractInteractionUt
 async function createERCTokens () {
     // Create Generic ERC20 on source
     const sourceContract: EVMBridge = await getSourceContract();
-    const genericTx = await sourceContract.createToken('Generic Token 12', 'GTT12', 'generic')
+    const genericTx = await sourceContract.createToken('Generic Token 13', 'GTT13', 'generic')
     await genericTx.wait()
 
-    const gTokenAddress = await sourceContract.tokens('GTT12');
+    const gTokenAddress = await sourceContract.tokens('GTT13');
     console.log("Generic Token Address Contract: " + gTokenAddress.toString())
 
     // Mint initial generic amount to user wallet
-    // for (let i = 0; i < 3; i++) {
-    //     const mintInitialTx = await sourceContract.mintInitialGenericTokenAmount('GTT11', secrets.PUBLIC_KEY, gTokenAddress,BigNumber.from(3000000000000000))
-    //     await mintInitialTx.wait()
-    // }
+    const mintInitialTx = await sourceContract.mintInitialGenericTokenAmount('GTT13', secrets.PUBLIC_KEY, gTokenAddress,BigNumber.from(3000000000000000))
+    await mintInitialTx.wait()
 
-    //
-    // // Create Wrapped ERC20 on Target
-    //  const targetContract: EVMBridge = await getTargetContract();
-    // const targetTx = await targetContract.createToken('Wrapped Token 11', 'WTT11', 'wrapped')
-    // await targetTx.wait()
-    //
-    // const wTokenAddress = await targetContract.tokens('WTT11');
-    // console.log("Wrapped Token Address Contract: " + wTokenAddress.toString())
+    // Create Wrapped ERC20 on Target
+    const targetContract: EVMBridge = await getTargetContract();
+    const targetTx = await targetContract.createToken('Wrapped Token 13', 'WTT13', 'wrapped')
+    await targetTx.wait()
+
+    const wTokenAddress = await targetContract.tokens('WTT13');
+    console.log("Wrapped Token Address Contract: " + wTokenAddress.toString())
 }
 
 async function getSourceContract (): Promise<EVMBridge> {
