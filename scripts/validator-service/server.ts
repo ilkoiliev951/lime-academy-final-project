@@ -1,6 +1,6 @@
 import express, {Request, Response} from 'express';
 import {updateUserBalanceOnChain} from "./handlers/contractInteraction";
-import {generateNonce, SiweMessage} from "siwe";
+import { SiweMessage} from "siwe";
 import Session from 'express-session'
 const interactionUtils = require('../contract-interaction-cli/utils/contractInteractionUtils')
 const config = require('./config/config.json')
@@ -11,11 +11,14 @@ const port = 8082;
 const app = express();
 app.use(express.json());
 
+const siweHelper = require('./handlers/siweHelper')
+
 // extending the SessionData interface in order to adapt to TS
 declare module 'express-session' {
     interface SessionData {
         siwe: SiweMessage,
-        nonce: string
+        nonce: string,
+        expires: Date
     }
 }
 
@@ -28,46 +31,23 @@ app.use(Session({
 }));
 
 app.get('/nonce', async function (req, res) {
-    const nonce = generateNonce()
-    req.session.nonce = nonce;
-    res.json(nonce)
+    await siweHelper.getNonce(req, res);
 });
 
 app.post('/verify', async function (req: Request, res: Response) {
-    try {
-        if (!req.body.message) {
-            res.status(422).json({message: 'Expected prepareMessage object as body.'});
-            return;
-        }
-
-        console.log(req.body)
-        console.log(req.body.message.address)
-
-        let SIWEObject = new SiweMessage(req.body.message);
-        const { data: message } = await SIWEObject.verify({ signature: req.body.signature, nonce: req.session.nonce });
-        req.session.siwe = message;
-        req.session.cookie.expires = new Date(message.expirationTime);
-        req.session.save(() => res.status(200).send(true));
-    } catch (e) {
-        req.session.siwe = null;
-        req.session.nonce = null;
-        console.error(e);
-        req.session.save(() => res.status(500).json({ message: e }));
-    }
+    await siweHelper.handleSIWELogin(req, res);
 });
 
-app.get('/personal_information', function (req, res) {
-    if (!req.session.siwe) {
-        res.status(401).json({ message: 'You have to first sign_in' });
-        return;
-    }
-    console.log("User is authenticated!");
-    res.setHeader('Content-Type', 'text/plain');
-    res.send(`You are authenticated and your address is: ${req.session.siwe.address}`);
+app.get('/isAuthenticated', async function (req:Request, res: Response) {
+    await siweHelper.isUserAuthenticated(req, res);
+});
+
+app.get('/getData', async function (req:Request, res: Response) {
+    await siweHelper.isUserAuthenticated(req, res);
 });
 
 app.post('/logout', async function (req: Request, res: Response) {
-
+    await siweHelper.handleSIWELogout(req, res);
 });
 
 app.get('/api/fetch-locked-awaiting', async (req: Request, res: Response) => {
@@ -153,8 +133,6 @@ app.post('/api/validator/update-balance', async (req: Request, res: Response) =>
         sourceBalance,
         targetBalance
     );
-
-    console.log('updated in db' + updatedInDB)
 
     if (updatedInDB) {
         const userBalanceUpdated = await updateUserBalanceOnChain(
