@@ -2,7 +2,6 @@ import {BigNumber} from 'ethers';
 import {calculateFee, transferFeeOnSource} from "../handlers/feeHandler";
 import {EVMBridge, GenericERC20} from "../../../typechain-types";
 import {TransactionValidationFailed} from "../../utils/exceptions/TransactionValidationFailed";
-import {signInWithEthereum} from "../utils/signInWithEthereum";
 const validator = require('./validatorInteraction')
 const config = require('./../../../config.json')
 const constants = require('./../utils/constants')
@@ -19,8 +18,6 @@ export async function lockWithPermit(
 
     const provider = await providerPromise;
     const wallet =  await interactionUtils.getWallet(privateKey, provider);
-
-    await signInWithEthereum(wallet, )
 
     await transferFeeOnSource(wallet, privateKey, calculateFee(amount), tokenAddress);
 

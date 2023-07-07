@@ -1,7 +1,13 @@
 import {SiweMessage, generateNonce} from "siwe";
 import {Request, Response} from 'express';
 
-const hashSiweMessageMap =  new Map<string, {}>();
+interface AuthData{
+    siwe: SiweMessage;
+    nonce: string;
+    expirationTime: Date
+}
+
+const hashSiweMessageMap =  new Map<string, AuthData>();
 
 export async function handleSIWELogin (req: Request, res: Response) {
     try {
@@ -26,11 +32,12 @@ export async function handleSIWELogin (req: Request, res: Response) {
         hashSiweMessageMap.set(req.body.sessionHash, {
             siwe: message,
             nonce: message.nonce,
-            expiresAt: message.expirationTime
+            expirationTime: new Date(message.expirationTime)
         })
 
-        req.session.save(() => res.status(200).send(true));
+        console.log('AUTH DATA: ' + hashSiweMessageMap.get(req.body.sessionHash))
 
+        req.session.save(() => res.status(200).send(true));
     } catch (e) {
         req.session.siwe = null;
         req.session.nonce = null;
@@ -41,6 +48,7 @@ export async function handleSIWELogin (req: Request, res: Response) {
 export function handleSIWELogout (req: Request, res: Response) {
     if (req.body.sessionHash && hashSiweMessageMap.get(req.body.sessionHash)) {
         hashSiweMessageMap.get(req.body.sessionHash)
+
         hashSiweMessageMap.delete(req.body.sessionHash)
         req.session.siwe = null;
         req.session.nonce = null;
@@ -50,9 +58,15 @@ export function handleSIWELogout (req: Request, res: Response) {
 }
 
 export async function isUserAuthenticated (req: Request, res: Response) {
-    const authObject = hashSiweMessageMap.get(req.body.sessionHash)
-    if (!authObject) {
-        res.status(401).json({ message: 'You have to first sign_in' });
+    const authObject: AuthData = hashSiweMessageMap.get(req.body.sessionHash)
+    if (!authObject || !authObject.siwe) {
+        res.status(401).json({message: 'You have to first sign_in'});
+        return;
+    }
+    const currentTime = new Date();
+    let isExpired = currentTime > authObject.expirationTime;
+    if (isExpired) {
+        res.status(401).json({message: 'SIWE Signature has expired. Log in again.'});
         return;
     }
 
