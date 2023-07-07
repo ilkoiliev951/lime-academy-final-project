@@ -38,7 +38,7 @@ app.post('/verify', async function (req: Request, res: Response) {
     await siweHelper.handleSIWELogin(req, res);
 });
 
-app.get('/isAuthenticated', async function (req:Request, res: Response) {
+app.post('/isAuthenticated', async function (req:Request, res: Response) {
     await siweHelper.isUserAuthenticated(req, res);
 });
 

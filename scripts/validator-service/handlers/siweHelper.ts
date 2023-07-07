@@ -35,8 +35,7 @@ export async function handleSIWELogin (req: Request, res: Response) {
             expirationTime: new Date(message.expirationTime)
         })
 
-        console.log('AUTH DATA: ' + hashSiweMessageMap.get(req.body.sessionHash))
-
+        console.log('User authenticated successfully')
         req.session.save(() => res.status(200).send(true));
     } catch (e) {
         req.session.siwe = null;
@@ -58,7 +57,9 @@ export function handleSIWELogout (req: Request, res: Response) {
 }
 
 export async function isUserAuthenticated (req: Request, res: Response) {
+    console.log(req.body.sessionHash)
     const authObject: AuthData = hashSiweMessageMap.get(req.body.sessionHash)
+    console.log(JSON.stringify(authObject))
     if (!authObject || !authObject.siwe) {
         res.status(401).json({message: 'You have to first sign_in'});
         return;
@@ -70,9 +71,8 @@ export async function isUserAuthenticated (req: Request, res: Response) {
         return;
     }
 
-    console.log("User is authenticated!");
     res.setHeader('Content-Type', 'text/plain');
-    res.send(`You are authenticated and your address is: ${req.session.siwe.address}`);
+    res.send(`User is authenticated with SIWE signature: ${req.session.siwe}`);
 }
 
 export async function getNonce (req: Request, res: Response) {

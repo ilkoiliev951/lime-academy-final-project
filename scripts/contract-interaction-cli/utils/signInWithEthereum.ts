@@ -33,6 +33,8 @@ async function createSiweMessage(address: string, statement:string): Promise<Siw
         const expirationTime = new Date();
         expirationTime.setHours(expirationTime.getHours() + 3);
 
+        console.log(expirationTime.toISOString())
+
         return new SiweMessage({
             domain: 'login.xyz',
             address: address,
@@ -41,7 +43,7 @@ async function createSiweMessage(address: string, statement:string): Promise<Siw
             version: '1',
             chainId: 1,
             nonce: nonce.toString(),
-            expirationTime: expirationTime.toTimeString()
+            expirationTime: expirationTime.toISOString()
         });
     }
 }
@@ -59,6 +61,7 @@ export async function signInWithEthereum(wallet: Wallet) {
     }
 
     console.log('Hash is: ' + hash)
+    console.log('Nonce is: ' + message.nonce)
 
     const res =  new Promise((resolve, reject) => {
         request({
@@ -72,7 +75,6 @@ export async function signInWithEthereum(wallet: Wallet) {
                 reject('Authentication failed');
             } else {
                 if (response.statusCode === 200) {
-                    console.log(response)
                     resolve(true);
                 } else {
                     reject('Authentication failed');
@@ -99,14 +101,13 @@ export async function signOut(wallet: Wallet, nonce) {
             body: reqBody
         }, (error, response) => {
             if (error) {
-                console.info('Logging out was unsuccessful.')
                 console.error(error);
-                resolve(false)
+                reject('Logging out was unsuccessful.')
             } else {
                 if (response.statusCode === 200) {
                     resolve(true);
                 } else {
-                    reject('');
+                    reject('Logging out was unsuccessful.');
                 }
             }
         });
@@ -114,15 +115,16 @@ export async function signOut(wallet: Wallet, nonce) {
     return await res;
 }
 
-export async function userAuthenticated(nonce) {
+export async function userAuthenticated(nonce) : Promise<boolean> {
     let endpoint = AUTH_BASE_URL + 'isAuthenticated';
+    console.log('nonce: ' + nonce)
     const reqBody = {
         sessionHash: getSessionHash(nonce)
     }
 
     console.log('Hash: ' + reqBody.sessionHash + ' for nonce: ' + nonce)
 
-    const res =  new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         request({
             url: endpoint,
             method: "POST",
@@ -132,18 +134,20 @@ export async function userAuthenticated(nonce) {
             if (error) {
                 console.info('User is not authenticated')
                 console.error(error);
+                console.log(response)
                 resolve(false)
             } else {
                 if (response.statusCode === 200) {
+                    console.log(response)
                     resolve(true);
                 } else {
                     console.info('User is not authenticated')
-                    reject(false);
+                    console.log(response)
+                    resolve(false);
                 }
             }
         });
     });
-    return await res;
 }
 
 function getSessionHash (salt: string): string {
@@ -162,7 +166,6 @@ function getLocalIpAddress() {
         const iface = interfaces[interfaceName];
         for (const { family, address, internal } of iface) {
             if (family === 'IPv4' && !internal) {
-                console.log(address)
                 return address;
             }
         }
