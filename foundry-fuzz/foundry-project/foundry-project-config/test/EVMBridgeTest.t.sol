@@ -153,6 +153,7 @@ contract EVMBridgeTest is Test {
         bridge.updateUserBridgeBalance(OWNER, value, value, "GTT");
         vm.stopPrank();
 
+        // Mint token amount to contract
         vm.prank(bridgeAddress);
         GenericERC20(tokenAddress).mint(bridgeAddress, value);
 
