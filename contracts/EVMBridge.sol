@@ -124,9 +124,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
             _r,
             _s
         );
-        // TODO: Recover address and assert that it's the same as
         IERC20(_tokenAddress).transferFrom(_user, address(this), _amount);
-
         emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.chainid, block.timestamp);
     }
 
