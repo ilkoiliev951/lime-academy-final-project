@@ -6,7 +6,8 @@ import "./EVMBridge.sol";
 /**
 Purpose of the contract is testing for reentrancy vulnerability.
 This acts only as a proof, that due to the design of ERC20 tokens,
-recursive calls are not possible with this approach.
+recursive calls are not possible with this approach since  fallback/
+receive function is not triggered.
 */
 contract ReentrancyAttack {
     EVMBridge public bridge;
