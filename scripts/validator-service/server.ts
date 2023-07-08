@@ -66,8 +66,8 @@ app.post('/api/fetch-bridged-by-user', async (req: Request, res: Response) => {
 });
 
 app.get('/api/fetch-all-bridged', async (req: Request, res: Response) => {
-    const awaitingBurntEvents = await validator.getAllActiveBurnEvents();
-    res.json(awaitingBurntEvents)
+    const allTransferred = await validator.getAllTransferredTokens();
+    res.json(allTransferred)
 });
 
 app.post('/api/validator/validate-mint', async (req: Request, res: Response) => {

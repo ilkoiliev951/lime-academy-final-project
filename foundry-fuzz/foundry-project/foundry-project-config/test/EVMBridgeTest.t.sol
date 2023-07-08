@@ -35,6 +35,8 @@ contract EVMBridgeTest is Test {
 
     function testFuzzMint () {
 
+
+
     }
 
     function testFuzzBurn () {

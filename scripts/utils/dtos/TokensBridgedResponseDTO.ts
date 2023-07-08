@@ -7,8 +7,17 @@ export class TokensBridgedResponseDTO {
     fromChainId: string
     toChainId: string
     timestamp: string
+    transferCompleted: boolean
 
-    constructor(tokenSymbol: string, tokenAddress: string, amount: string, userAddress: string, fromChainId: string, toChainId: string, timestamp: string) {
+    constructor(
+        tokenSymbol: string,
+        tokenAddress: string,
+        amount: string, userAddress: string,
+        fromChainId: string,
+        toChainId: string,
+        timestamp: string,
+        transferCompleted: boolean) {
+
         this.tokenSymbol = tokenSymbol;
         this.tokenAddress = tokenAddress;
         this.amount = amount;
@@ -16,5 +25,6 @@ export class TokensBridgedResponseDTO {
         this.fromChainId = fromChainId;
         this.toChainId = toChainId;
         this.timestamp = timestamp;
+        this.transferCompleted = transferCompleted;
     }
 }

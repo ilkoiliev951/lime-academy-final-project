@@ -140,6 +140,28 @@ export async function getAllTransferredTokensByAddress(address: string) {
     return result;
 }
 
+export async function getAllTransferredTokens() {
+    const result = new Array()
+
+    // Using I like to performa case-insensitive query,
+    // since addresses from decoded events might differ
+    const releasedBurntEvents = await AppDataSource.manager
+        .createQueryBuilder(TokensBurnt, "event")
+        .where('event.releasedOnSource IS TRUE')
+        .getMany();
+
+    mapper.mapBurnEventsToUserTransferredResponse(releasedBurntEvents, result)
+
+    const claimedLockedEvents = await AppDataSource.manager
+        .createQueryBuilder(TokensLocked, "event")
+        .where('event.claimedOnTarget IS TRUE')
+        .getMany();
+
+    mapper.mapLockEventsToUserTransferredResponse(claimedLockedEvents, result)
+
+    return result;
+}
+
 async function getUserBalanceBySymbol(address: string, tokenSymbol: string) {
      const userBalance = await AppDataSource.manager
          .createQueryBuilder(TokenBalance, "balance")

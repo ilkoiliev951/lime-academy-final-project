@@ -10,7 +10,8 @@ export function mapBurnEventsToUserTransferredResponse (events, result) {
             event.userAddress,
             event.chainId,
             '11155111',
-            event.timestamp
+            event.timestamp,
+            event.releasedOnSource
         )));
     }
 }
@@ -24,7 +25,8 @@ export function mapLockEventsToUserTransferredResponse (events, result) {
             event.userAddress,
             event.chainId,
             '5',
-            event.timestamp
+            event.timestamp,
+            event.claimedOnTarget
         )));
     }
 }
