@@ -53,6 +53,8 @@
     "fs": "^0.0.2",
     "typeorm-extension": "^2.8.1",
     "siwe": "^2.1.4",
-    "express-session": "^1.17.3"
+    "express-session": "^1.17.3",
+    "prom-client": "^14.2.0",
+    "response-time": "^2.3.2"
   }
 }

@@ -14,19 +14,34 @@ contract EVMBridgeTest is Test {
     }
 
     function testFuzzCreateGenericToken(string memory tokenName, string memory tokenSymbol) public {
-        try bridge.createToken(tokenName, tokenSymbol, "generic") {
-            assertTrue(true);
-        } catch Error(string memory reason) {
-           assertTrue(true);
-        } catch {
-            // Revert: Any other error should not occur
-            assertTrue(false);
-        }
+        vm.assume(bytes(tokenName).length > 0);
+        vm.assume(bytes(tokenSymbol).length > 0);
+
+        bridge.createToken(tokenName, tokenSymbol, "generic");
+        assertNotEq(bridge.tokens(tokenSymbol), address(0));
     }
 
-//    function testFuzzCreateWrappedToken(string memory tokenName, string memory tokenSymbol) public {
-//        vm.expectRevert(InvalidStringInput.selector);
-//        bridge.createToken(tokenName, tokenSymbol, "wrapped");
-//      //  assertNotEq(address(0), bridge.tokens(tokenSymbol));
-//    }
+    function testFuzzCreateWrappedToken(string memory tokenName, string memory tokenSymbol) public {
+        vm.assume(bytes(tokenName).length > 0);
+        vm.assume(bytes(tokenSymbol).length > 0);
+
+        bridge.createToken(tokenName, tokenSymbol, "wrapped");
+        assertNotEq(address(0), bridge.tokens(tokenSymbol));
+    }
+
+    function testFuzzLock () {
+
+    }
+
+    function testFuzzMint () {
+
+    }
+
+    function testFuzzBurn () {
+
+    }
+
+    function testFuzzRelease () {
+
+    }
 }
