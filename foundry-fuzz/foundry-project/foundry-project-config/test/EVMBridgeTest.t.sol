@@ -11,6 +11,7 @@ contract EVMBridgeTest is Test {
 
     function setUp() public {
         bridge = new EVMBridge();
+        
     }
 
     function testFuzzCreateGenericToken(string memory tokenName, string memory tokenSymbol) public {
@@ -29,21 +30,20 @@ contract EVMBridgeTest is Test {
         assertNotEq(address(0), bridge.tokens(tokenSymbol));
     }
 
-    function testFuzzLock () {
+    function testFuzzLock () public {
 
     }
-
-    function testFuzzMint () {
-
-
-
-    }
-
-    function testFuzzBurn () {
-
-    }
-
-    function testFuzzRelease () {
-
-    }
+//
+//    function testFuzzMint () {
+//
+//
+//    }
+//
+//    function testFuzzBurn () {
+//
+//    }
+//
+//    function testFuzzRelease () {
+//
+//    }
 }

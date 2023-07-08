@@ -3,6 +3,7 @@ import { expect,} from "chai";
 import { ethers } from "hardhat";
 import {BigNumber} from "ethers";
 import {GenericERC20, ReentrancyAttack} from "../../typechain-types";
+import {InvalidUserAddressError} from "../../scripts/utils/exceptions/InvalidUserAddress";
 
 const hre = require("hardhat")
 const sigGenerator = require("../../scripts/utils/helpers/permitSignatureGenerator")
@@ -112,6 +113,19 @@ describe("EVM Token Bridge", function () {
 
         await expect(transaction).emit(bridge, "TokenAmountMinted")
         expect(userBalanceAfterMint.toString()).to.be.equal('1000000000000000000')
+    });
+
+    it("Should revert when invalid user address", async function () {
+        const testUserAddress = '0x0000000000000000000000000000000000000000'
+        const wrappedTokenAddress = await bridge.tokens('WTT');
+
+        await expect(
+            bridge.mint(
+                "WTT",
+                "'Wrapped Test Token'",
+                wrappedTokenAddress,
+                testUserAddress,
+                20000)).to.be.revertedWithCustomError(bridge, 'InvalidUserAddress');
     });
 
     it("Should revert when trying to exceed max mint amount", async function () {
@@ -463,6 +477,64 @@ describe("EVM Token Bridge", function () {
 
     });
 
+
+    it("Should revert when trying to lock token with invalid symbol", async function () {
+        // Fetch needed addresses
+        const testUserAddress = '0x0000000000000000000000000000000000000000'
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[0].getAddress();
+        const genericTokenAddress = await bridge.tokens('GTT');
+        const testGenericERCContract = await ethers.getContractAt(
+            "GenericERC20",
+            genericTokenAddress
+        );
+
+        // Mint some tokens for the user
+        const mintTx = await bridge.mint(
+            "GTT",
+            "Generic Test Token",
+            genericTokenAddress,
+            userAddress,
+            20000)
+        await mintTx.wait()
+
+        // Generate permit data
+        const deadline = ethers.constants.MaxUint256;
+        const spender = bridge.address;
+        const value = 100;
+
+        const [nonce, name, version] = await Promise.all([
+            testGenericERCContract.nonces(userAddress),
+            testGenericERCContract.name(),
+            "1"
+        ]);
+
+        const chainId = BigNumber.from(31337);
+
+        const {v,r,s}= await sigGenerator.generateERC20PermitSignature(
+            signers[0],
+            name,
+            version,
+            chainId,
+            genericTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+
+        await expect(bridge.lock(
+            testUserAddress,
+            genericTokenAddress,
+            "",
+            100,
+            deadline,
+            v,
+            r,
+            s)).to.be.revertedWithCustomError(bridge, 'InvalidUserAddress')
+    });
+
     it("Should revert when trying to lock token with invalid symbol", async function () {
         // Fetch needed addresses
         const signers = await ethers.getSigners();
@@ -641,6 +713,64 @@ describe("EVM Token Bridge", function () {
             r,
             s)).to.be.revertedWith('Requested burn amount exceeds minted target amount')
 
+    });
+
+    it("Should revert when burning token with invalid symbol", async function () {
+        // Fetch needed addresses
+        const testUserAddress = '0x0000000000000000000000000000000000000000'
+        const signers = await ethers.getSigners();
+        const userAddress = await signers[1].getAddress();
+        const wrappedTokenAddress = await bridge.tokens('WTT');
+        const testGenericERCContract = await ethers.getContractAt(
+            "WrappedERC20",
+            wrappedTokenAddress
+        );
+
+        // Mint some tokens for the user
+        const mintTx = await bridge.mint(
+            "WTT",
+            "Wrapped Test Token",
+            wrappedTokenAddress,
+            userAddress,
+            1000)
+
+        await mintTx.wait()
+
+        // Generate permit data
+        const deadline = ethers.constants.MaxUint256;
+        const spender = bridge.address;
+        const value = 100;
+
+        const [nonce, name, version] = await Promise.all([
+            testGenericERCContract.nonces(userAddress),
+            testGenericERCContract.name(),
+            "1"
+        ]);
+
+        const chainId = BigNumber.from(31337);
+
+        const { v, r, s } = await sigGenerator.generateERC20PermitSignature(
+            signers[1],
+            name,
+            version,
+            chainId,
+            wrappedTokenAddress,
+            userAddress,
+            spender,
+            nonce,
+            deadline,
+            value
+        )
+        // Assert that event is emitted
+        await expect(bridge.burnWithPermit(
+            "",
+            wrappedTokenAddress,
+            testUserAddress,
+            value,
+            deadline,
+            v,
+            r,
+            s)).to.be.revertedWithCustomError(bridge, 'InvalidUserAddress')
     });
 
     it("Should revert when burning token with invalid symbol", async function () {
