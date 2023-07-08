@@ -2,6 +2,7 @@ import { EVMBridge } from "./../../typechain-types/contracts/EVMBridge";
 import { expect,} from "chai";
 import { ethers } from "hardhat";
 import {BigNumber} from "ethers";
+import {GenericERC20, ReentrancyAttack} from "../../typechain-types";
 
 const hre = require("hardhat")
 const sigGenerator = require("../../scripts/utils/helpers/permitSignatureGenerator")
@@ -13,16 +14,22 @@ describe("EVM Token Bridge", function () {
     let bridgeFactory;
     let bridge: EVMBridge;
 
+    let reentrancyFactory;
+    let reentrancy: ReentrancyAttack
+
     before(async function () {
         await hre.network.provider.send("hardhat_reset")
+        // Deploy EVMBridge contract to Hardhat Node
         bridgeFactory = await ethers.getContractFactory("EVMBridge");
-
         // @ts-ignore
-        // Deploy
         bridge = await bridgeFactory.deploy();
-
-        // Await
         await bridge.deployed();
+
+        // Deploy ReentrancyAttack contract to Hardhat Node
+        reentrancyFactory = await ethers.getContractFactory("ReentrancyAttack");
+        // @ts-ignore
+        reentrancy = await reentrancyFactory.deploy(bridge.address);
+        await reentrancy.deployed();
     })
 
     // Create
@@ -750,7 +757,7 @@ describe("EVM Token Bridge", function () {
             s)).to.be.revertedWithCustomError(bridge, 'InvalidAmount')
     });
 
-
+    // Release
     it("Should release token amount back to user wallet", async function () {
         // Fetch needed addresses
         const [owner, addr3] = await ethers.getSigners();
@@ -878,5 +885,35 @@ describe("EVM Token Bridge", function () {
         );
         await expect(testWrappedERCContract.connect(addr3).mint(userAddress, 1000))
             .to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("Should not allow recursive call through fallback/receive function in malicious contract", async function () {
+        // Fetch needed addresses
+        const genericTokenAddress = await bridge.tokens('GTT');
+        const testGenericERCContract = await ethers.getContractAt(
+            "GenericERC20",
+            genericTokenAddress
+        );
+
+        // Mint tokens for the bridge contracts itself
+        const mintTx = await bridge.mint(
+            "GTT",
+            "Generic Test Token",
+            genericTokenAddress,
+            bridge.address,
+            1000)
+
+        await mintTx.wait()
+
+        const updateTx1 =  await bridge.updateUserBridgeBalance(reentrancy.address,1000,0, 'GTT');
+        await updateTx1.wait()
+
+        const setTokenAddressTx =  await reentrancy.updateTokenAddress(genericTokenAddress);
+        await setTokenAddressTx.wait()
+        const attackTx = await reentrancy.attack()
+        await attackTx.wait();
+
+        const reentrancyPostAttackBalance = await testGenericERCContract.balanceOf(reentrancy.address);
+        expect(reentrancyPostAttackBalance).to.be.equal(100)
     });
 });

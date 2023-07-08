@@ -104,7 +104,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external payable nonReentrant() isValidAmountInput(_amount) isValidString(_tokenSymbol) {
+    ) external payable nonReentrant isValidAmountInput(_amount) isValidString(_tokenSymbol) {
 
         IERC20Permit(_tokenAddress).permit(
             _user,
@@ -120,7 +120,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.chainid, block.timestamp);
     }
 
-    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external nonReentrant() isValidAmountInput(_amount) isValidString(_tokenSymbol) {
+    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external nonReentrant isValidAmountInput(_amount) isValidString(_tokenSymbol) {
         require(bridgeAmountIsValid(_amount, _tokenSymbol, "release") == true);
 
         address user = msg.sender;
@@ -184,7 +184,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         bytes32 _s
     )
     external
-    nonReentrant()
+    nonReentrant
     isValidString(_tokenSymbol)
     isValidAmountInput(_amount)
     returns (bool)
