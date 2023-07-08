@@ -18,7 +18,6 @@ export async function lockWithPermit(
 
     const provider = await providerPromise;
     const wallet =  await interactionUtils.getWallet(privateKey, provider);
-    console.log('in the lock')
 
     await transferFeeOnSource(wallet, privateKey, calculateFee(amount), tokenAddress);
 

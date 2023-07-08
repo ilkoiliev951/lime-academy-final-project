@@ -31,7 +31,6 @@ export async function main() {
         case COMMANDS.LOCK:
             if (!argumentsAreMissing(COMMAND_ELEMENT_COUNT_DICT.LOCK) && !isNullUndefined(process.argv[3])) {
                 const authenticated: boolean = await userAuthenticated(process.argv[3])
-                console.log('Authenticated: ' + authenticated)
                 if (authenticated) {
                     let tokenSymbol = process.argv[4];
                     let tokenAddress = process.argv[5];
