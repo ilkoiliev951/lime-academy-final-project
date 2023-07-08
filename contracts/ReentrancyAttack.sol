@@ -3,9 +3,11 @@ pragma solidity ^0.8.17;
 
 import "./EVMBridge.sol";
 
-// Purpose of the contract is testing for reentrancy vulnerability
-// This acts only as a proof, that due to the design of ERC20 tokens,
-// recursive calls are not possible with this approach.
+/**
+Purpose of the contract is testing for reentrancy vulnerability.
+This acts only as a proof, that due to the design of ERC20 tokens,
+recursive calls are not possible with this approach.
+*/
 contract ReentrancyAttack {
     EVMBridge public bridge;
     address public exploitTokenAddress;
