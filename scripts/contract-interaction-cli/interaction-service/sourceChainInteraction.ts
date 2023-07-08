@@ -81,7 +81,7 @@ export async function release(
             printTransactionOutput(releaseTx)
         }
     } else {
-        console.log('Release transaction validation failed')
+        throw new TransactionValidationFailed('Failed to validate, that transaction was included in block')
     }
 }
 

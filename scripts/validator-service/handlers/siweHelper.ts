@@ -7,7 +7,7 @@ interface AuthData{
     expirationTime: Date
 }
 
-const hashSiweMessageMap =  new Map<string, AuthData>();
+const hashSiweMessageMap = new Map<string, AuthData>();
 
 export async function handleSIWELogin (req: Request, res: Response) {
     try {

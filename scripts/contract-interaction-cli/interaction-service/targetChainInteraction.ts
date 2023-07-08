@@ -17,8 +17,8 @@ export async function mint (
     amount: BigNumber,
     privateKey: string) {
 
-    const p = await provider;
-    const wallet = await interactionUtils.getWallet(privateKey, p);
+    const resolvedProvider = await provider;
+    const wallet = await interactionUtils.getWallet(privateKey, resolvedProvider);
     const userAddressPub = wallet.address;
 
     const validMintRequest = await validator.validateMintRequest(tokenSymbol, tokenAddress, amount.toString(), userAddressPub);
@@ -34,7 +34,7 @@ export async function mint (
         )
         await mintTx.wait()
 
-        const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(p, mintTx.hash)
+        const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(resolvedProvider, mintTx.hash)
         if (transactionComplete) {
             await validator.updateUserBalanceRequest(wallet.address, amount.toString(), '', '',tokenSymbol, tokenAddress, false)
             printTransactionOutput(mintTx)
@@ -50,8 +50,8 @@ export async function burnWithPermit(
     amount: BigNumber,
     privateKey: string) {
 
-    const p = await provider;
-    const wallet = await interactionUtils.getWallet(privateKey, p);
+    const resolvedProvider = await provider;
+    const wallet = await interactionUtils.getWallet(privateKey, resolvedProvider);
     const validBurnRequest = await validator.validateBurnRequest(tokenSymbol, tokenAddress, amount.toString(), wallet.address);
 
     if (validBurnRequest) {
@@ -86,7 +86,7 @@ export async function burnWithPermit(
         )
         await burnTx.wait()
 
-        const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(p, burnTx.hash)
+        const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(resolvedProvider, burnTx.hash)
         if (transactionComplete) {
             const userBalanceUpdated = await validator.updateUserBalanceRequest(userAddressPub, amount.toString(), '', '', tokenSymbol, tokenAddress, false)
             if (userBalanceUpdated) {

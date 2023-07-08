@@ -60,9 +60,6 @@ export async function signInWithEthereum(wallet: Wallet) {
         sessionHash: hash
     }
 
-    console.log('Hash is: ' + hash)
-    console.log('Nonce is: ' + message.nonce)
-
     const res =  new Promise((resolve, reject) => {
         request({
             url: endpoint,
@@ -75,6 +72,7 @@ export async function signInWithEthereum(wallet: Wallet) {
                 reject('Authentication failed');
             } else {
                 if (response.statusCode === 200) {
+                    console.log('Authentication successful!');
                     resolve(true);
                 } else {
                     reject('Authentication failed');

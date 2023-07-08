@@ -118,8 +118,6 @@ export async function parseBurnEvent(decodedBurn: any, topics) {
             timestamp.toString()
         )
 
-        console.log(burnEntity)
-
         await repository.saveBurntEvent(burnEntity)
     }
 }
