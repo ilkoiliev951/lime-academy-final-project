@@ -87,10 +87,12 @@ async function registerTargetNetworkEventListeners() {
 }
 
 async function readBlocksOnTargetFrom(startingBlock: number | null) {
+    console.log('Starting to read blocks on target with initial number: ' + startingBlock)
     if (startingBlock != null) {
+        startingBlock++;
         const provider = getWebSocketProvider(TARGET_NETWORK_TYPE)
         const logs = await provider.getLogs({
-            fromBlock: startingBlock + 1,
+            fromBlock: startingBlock,
             toBlock: provider.getBlockNumber(),
             address: config.PROJECT_SETTINGS.BRIDGE_CONTRACT_TARGET
         });
@@ -120,7 +122,7 @@ async function readBlocksOnTargetFrom(startingBlock: number | null) {
                         await repository.updateLastProcessedTargetBlock(logs[i].blockNumber, decodedBurn['timestamp'].toString())
                         break;
                     default:
-                        return;
+                        break;
                 }
             } catch (e) {
                 console.log(e)
@@ -129,51 +131,62 @@ async function readBlocksOnTargetFrom(startingBlock: number | null) {
     } else {
         console.info('No starting block exists in DB for target network')
     }
+    console.log('Finished reading blocks on target')
 }
 
 async function readBlocksOnSourceFrom(startingBlock: number | null) {
+    console.log('Starting to read blocks on source with initial number: ' + startingBlock)
+    startingBlock++;
     if (startingBlock != null) {
+        console.log('block' + startingBlock)
         const provider = getWebSocketProvider(SOURCE_NETWORK_TYPE)
         const logs = await provider.getLogs({
-            fromBlock: startingBlock + 1,
-            toBlock: provider.getBlockNumber(),
+            fromBlock: 3855125,
             address: config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE
-        });
+        }).catch((err: string) => console.error("BACKEND CATASTROPHE: ", err))
 
-        for (let i = 0; i < logs.length; i++) {
-            try {
-                const topics = logs[i].topics
-                const tx = await provider.getTransaction(logs[i].transactionHash)
-                const iface = new ethers.utils.Interface(bridge.abi);
-                const methodId = tx.data.substring(0, 10);
-                const method = iface.getFunction(methodId).name;
+        if (logs) {
+            for (let i = 0; i < logs.length; i++) {
 
-                switch (method) {
-                    case 'createToken':
-                        const decodedNewToken = iface.decodeEventLog("NewTokenCreated", logs[i].data);
-                        await parser.parseNewTokenEvent(decodedNewToken, topics)
-                        await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedNewToken['timestamp'].toString())
-                        break;
-                    case 'lock':
-                        const decodedLock = iface.decodeEventLog("TokenAmountLocked", logs[i].data);
-                        await parser.parseDecodedLockEvent(decodedLock, topics)
-                        await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedLock['timestamp'].toString())
-                        break;
-                    case 'release':
-                        const decodedRelease = iface.decodeEventLog("TokenAmountReleased", logs[i].data);
-                        await parser.parseDecodedReleaseEvent(decodedRelease, topics)
-                        await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedRelease['timestamp'].toString())
-                        break;
-                    default:
-                        return;
+                try {
+                    const topics = logs[i].topics
+                    const tx = await provider.getTransaction(logs[i].transactionHash)
+                    const iface = new ethers.utils.Interface(bridge.abi);
+                    const methodId = tx.data.substring(0, 10);
+                    const method = iface.getFunction(methodId).name;
+
+                    switch (method) {
+                        case 'createToken':
+                            const decodedNewToken = iface.decodeEventLog("NewTokenCreated", logs[i].data);
+                            await parser.parseNewTokenEvent(decodedNewToken, topics)
+                            await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedNewToken['timestamp'].toString())
+                            break;
+                        case 'lock':
+                            console.log('Saving unprocessed lock event.')
+                            console.log(logs[i].blockNumber)
+                            const decodedLock = iface.decodeEventLog("TokenAmountLocked", logs[i].data);
+                            await parser.parseDecodedLockEvent(decodedLock, topics)
+                            await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedLock['timestamp'].toString())
+                            break;
+                        case 'release':
+                            const decodedRelease = iface.decodeEventLog("TokenAmountReleased", logs[i].data);
+                            await parser.parseDecodedReleaseEvent(decodedRelease, topics)
+                            await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedRelease['timestamp'].toString())
+                            break;
+                        default:
+                            break;
+                    }
+                } catch (e) {
+                    console.log(e)
                 }
-            } catch (e) {
-                console.log(e)
             }
+        } else {
+            console.log('No logs found for the block range. Stopping block read.')
         }
     } else {
         console.info('No starting block exists in DB for source network')
     }
+    console.log('Finished reading blocks on source')
 }
 
 
