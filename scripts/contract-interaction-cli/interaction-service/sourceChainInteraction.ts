@@ -52,7 +52,7 @@ export async function lockWithPermit(
 
     const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, lockTx.hash)
     if (transactionComplete) {
-        await validator.updateUserBalanceRequest(wallet.address, amount.toString(), tokenSymbol, tokenAddress, '', '',  true)
+        await validator.updateUserBalanceRequest(wallet.address, amount.toString(), tokenSymbol, tokenAddress, '', '',  true, 'LOCK')
         printTransactionOutput(lockTx)
     } else {
         throw new TransactionValidationFailed('Failed to validate, that transaction was included in block')
@@ -77,7 +77,7 @@ export async function release(
 
         const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(provider, releaseTx.hash)
         if (transactionComplete) {
-            await validator.updateUserBalanceRequest(wallet.address, amount.toString(), tokenSymbol, tokenAddress, '', '', true)
+            await validator.updateUserBalanceRequest(wallet.address, amount.toString(), tokenSymbol, tokenAddress, '', '', true, 'RELEASE')
             printTransactionOutput(releaseTx)
         }
     } else {

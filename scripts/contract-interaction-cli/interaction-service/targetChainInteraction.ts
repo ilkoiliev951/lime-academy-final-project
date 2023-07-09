@@ -36,7 +36,7 @@ export async function mint (
 
         const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(resolvedProvider, mintTx.hash)
         if (transactionComplete) {
-            await validator.updateUserBalanceRequest(wallet.address, amount.toString(), '', '',tokenSymbol, tokenAddress, false)
+            await validator.updateUserBalanceRequest(wallet.address, amount.toString(), '', '',tokenSymbol, tokenAddress, false, 'MINT')
             printTransactionOutput(mintTx)
         }
     } else {
@@ -88,9 +88,9 @@ export async function burnWithPermit(
 
         const transactionComplete = await interactionUtils.transactionIsIncludedInBlock(resolvedProvider, burnTx.hash)
         if (transactionComplete) {
-            const userBalanceUpdated = await validator.updateUserBalanceRequest(userAddressPub, amount.toString(), '', '', tokenSymbol, tokenAddress, false)
+            const userBalanceUpdated = await validator.updateUserBalanceRequest(userAddressPub, amount.toString(), '', '', tokenSymbol, tokenAddress, false, 'BURN')
             if (userBalanceUpdated) {
-                console.log('Updated user bridge balance')
+                console.log('Updated user bridge balance on chain')
                 printTransactionOutput(burnTx)
             }
         }

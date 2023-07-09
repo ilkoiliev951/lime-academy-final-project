@@ -23,7 +23,9 @@ export async function updateUserBalanceRequest (
     tokenAddressSource: string,
     tokenSymbolTarget: string,
     tokenAddressTarget: string,
-    isSourceOperation) {
+    isSourceOperation: boolean,
+    operationType: string
+) {
 
     let requestBodyJson = {
         user: userAddress,
@@ -32,7 +34,8 @@ export async function updateUserBalanceRequest (
         addressSource: tokenAddressSource,
         addressTarget: tokenAddressTarget,
         isSourceOperation: isSourceOperation,
-        amount: amount
+        amount: amount,
+        operationType: operationType
     }
 
     return await sendValidatorRequest(requestBodyJson, 'update-balance')

@@ -6,7 +6,6 @@ import {AppDataSource} from "./dataSource";
 import {TokenBalance} from "../../entity/TokenBalance";
 import {TokensBurnt} from "../../entity/TokensBurnt";
 import {BigNumber} from "ethers";
-import {TokensBridgedResponseDTO} from "../../utils/dtos/TokensBridgedResponseDTO";
 
 const mapper = require('./../../utils/helpers/mapper')
 
@@ -162,7 +161,7 @@ export async function getAllTransferredTokens() {
     return result;
 }
 
-async function getUserBalanceBySymbol(address: string, tokenSymbol: string) {
+export async function getUserBalanceBySymbol(address: string, tokenSymbol: string) {
      const userBalance = await AppDataSource.manager
          .createQueryBuilder(TokenBalance, "balance")
          .where("balance.userAddress = :address", { address: address })
@@ -175,7 +174,8 @@ async function getUserBalanceBySymbol(address: string, tokenSymbol: string) {
      if (userBalance) {
         return userBalance;
     }
-    throw new EntityNotFoundException('User or event with the given address was not found.')
+
+   return
 }
 
 export async function updateUserBalance(

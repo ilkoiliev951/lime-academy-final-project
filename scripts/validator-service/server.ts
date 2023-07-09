@@ -1,7 +1,9 @@
 import express, {Request, Response} from 'express';
 import {updateUserBalanceOnChain} from "./handlers/contractInteraction";
-import { SiweMessage} from "siwe";
+import {SiweMessage} from "siwe";
 import Session from 'express-session'
+import {getSourceBalance, getTargetBalance} from "./handlers/udpateBalanceHelper";
+
 const interactionUtils = require('../contract-interaction-cli/utils/contractInteractionUtils')
 const config = require('./config/config.json')
 const validator = require('./data/dbValidator')
@@ -27,7 +29,7 @@ app.use(Session({
     secret: "lime-siwe-secret",
     resave: true,
     saveUninitialized: true,
-    cookie: { secure: false, sameSite: true }
+    cookie: {secure: false, sameSite: true}
 }));
 
 app.get('/nonce', async function (req, res) {
@@ -38,11 +40,11 @@ app.post('/verify', async function (req: Request, res: Response) {
     await siweHelper.handleSIWELogin(req, res);
 });
 
-app.post('/isAuthenticated', async function (req:Request, res: Response) {
+app.post('/isAuthenticated', async function (req: Request, res: Response) {
     await siweHelper.isUserAuthenticated(req, res);
 });
 
-app.get('/getData', async function (req:Request, res: Response) {
+app.get('/getData', async function (req: Request, res: Response) {
     await siweHelper.isUserAuthenticated(req, res);
 });
 
@@ -108,48 +110,47 @@ app.post('/api/validator/update-balance', async (req: Request, res: Response) =>
         targetToken = await validator.getTokenOnOtherChain(req.body.tokenSymbolSource)
         sourceToken = {
             tokenAddress: req.body.addressSource,
-            tokenSymbol:req.body.tokenSymbolSource
+            tokenSymbol: req.body.tokenSymbolSource
         }
     } else {
         sourceToken = await validator.getTokenOnOtherChain(req.body.tokenSymbolTarget)
         targetToken = {
-            tokenAddress:req.body.addressTarget,
+            tokenAddress: req.body.addressTarget,
             tokenSymbol: req.body.tokenSymbolTarget
         }
     }
 
-    const targetProvider = await interactionUtils.getProvider(false);
-    const targetWallet = await interactionUtils.getWallet(config.SETTINGS.ownerKey, targetProvider);
-    let targetBalance = await interactionUtils.getUserTargetBalanceOnChain(targetWallet, targetToken.tokenAddress, req.body.user)
+    let targetBalance = await getTargetBalance(req.body.operationType, req.body.amount, req.body.user, targetToken.tokenSymbol);
+    let sourceBalance = await getSourceBalance(req.body.operationType, req.body.amount, req.body.user, sourceToken.tokenSymbol);
 
-    const provider = await interactionUtils.getProvider(true);
-    const wallet = await interactionUtils.getWallet(config.SETTINGS.ownerKey, provider);
-    let sourceBalance = await interactionUtils.getUserSourceBalanceOnChain(wallet, sourceToken.tokenAddress, req.body.user)
-
-    const updatedInDB = await validator.updateUserBalance(
-        req.body.user,
-        sourceToken.tokenSymbol,
-        targetToken.tokenSymbol,
-        sourceBalance,
-        targetBalance
-    );
-
-    if (updatedInDB) {
-        const userBalanceUpdated = await updateUserBalanceOnChain(
+    try {
+        const updatedInDB = await validator.updateUserBalance(
             req.body.user,
             sourceToken.tokenSymbol,
-            sourceBalance,
             targetToken.tokenSymbol,
-            targetBalance
-        );
+            sourceBalance.toString(),
+            targetBalance.toString())
 
-        if (userBalanceUpdated) {
-            res.sendStatus(200);
-            return;
+        if (updatedInDB) {
+            console.log('Updated balance in DB')
+            const userBalanceUpdated = await updateUserBalanceOnChain(
+                req.body.user,
+                sourceToken.tokenSymbol,
+                sourceBalance,
+                targetToken.tokenSymbol,
+                targetBalance
+            );
+
+            if (userBalanceUpdated) {
+                res.sendStatus(200);
+                return;
+            }
         }
+        console.log('Failed updating user balance after tx.')
+        res.sendStatus(406);
+    } catch (e) {
+        console.log(e)
     }
-    console.log('Failed updating user balance after tx.')
-    res.sendStatus(406);
 });
 
 app.listen(port, () => {

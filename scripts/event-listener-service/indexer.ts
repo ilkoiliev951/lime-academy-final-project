@@ -115,7 +115,7 @@ async function readBlocksOnTargetFrom(startingBlock: number | null) {
                         case 'mint':
                             console.log('Saving unprocessed mint event.')
                             const decodedMint = iface.decodeEventLog("TokenAmountMinted", logs[i].data);
-                            await parser.parseMintEvent(decodedMint, topics)
+                            await parser.parseMintEvent(decodedMint, topics, tx.to)
                             await repository.updateLastProcessedTargetBlock(logs[i].blockNumber, decodedMint['timestamp'].toString())
                             break;
                         case 'burnWithPermit':
@@ -169,13 +169,13 @@ async function readBlocksOnSourceFrom(startingBlock: number | null) {
                         case 'lock':
                             console.log('Saving unprocessed lock event.')
                             const decodedLock = iface.decodeEventLog("TokenAmountLocked", logs[i].data);
-                            await parser.parseDecodedLockEvent(decodedLock, topics)
+                            await parser.parseDecodedLockEvent(decodedLock, topics, tx.from)
                             await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedLock['timestamp'].toString())
                             break;
                         case 'release':
                             console.log('Saving unprocessed release event.')
                             const decodedRelease = iface.decodeEventLog("TokenAmountReleased", logs[i].data);
-                            await parser.parseDecodedReleaseEvent(decodedRelease, topics)
+                            await parser.parseDecodedReleaseEvent(decodedRelease, topics, tx.to)
                             await repository.updateLastProcessedSourceBlock(logs[i].blockNumber, decodedRelease['timestamp'].toString())
                             break;
                         default:

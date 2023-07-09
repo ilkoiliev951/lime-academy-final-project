@@ -9,7 +9,7 @@ const repository = require('./../data/repository')
 const config = require('../../../config.json')
 
 
-export async function parseDecodedLockEvent(decodedLock: any, topics) {
+export async function parseDecodedLockEvent(decodedLock: any, topics, userAddress: string) {
     if (decodedLock) {
         const decoder = new ethers.utils.AbiCoder();
 
@@ -22,7 +22,7 @@ export async function parseDecodedLockEvent(decodedLock: any, topics) {
         const lockEntity = new TokensLocked(
             tokenSymbol,
             tokenAddress.at(0),
-            amount._hex,
+            userAddress,
             amount.toString(),
             chainId.toString(),
             config.PROJECT_SETTINGS.BRIDGE_CONTRACT_SOURCE,
@@ -34,7 +34,7 @@ export async function parseDecodedLockEvent(decodedLock: any, topics) {
     }
 }
 
-export async function parseDecodedReleaseEvent(decodedRelease: any, topics) {
+export async function parseDecodedReleaseEvent(decodedRelease: any, topics, userAddress: string) {
     if (decodedRelease) {
         const decoder = new ethers.utils.AbiCoder();
 
@@ -120,7 +120,7 @@ export async function parseBurnEvent(decodedBurn: any, topics) {
     }
 }
 
-export async function parseMintEvent(decodedMintToken: any, topics) {
+export async function parseMintEvent(decodedMintToken: any, topics, userAddress: string) {
     if (decodedMintToken) {
         const decoder = new ethers.utils.AbiCoder();
         const userAddress = await decoder.decode(["address"], topics[topics.length - 2])
