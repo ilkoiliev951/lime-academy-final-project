@@ -17,8 +17,13 @@ export async function handleSIWELogin (req: Request, res: Response) {
             return;
         }
 
+        if (hashSiweMessageMap.get(req.body.sessionHash) !== undefined) {
+            res.status(422).json({message: 'User has already authenticated'});
+            return;
+        }
+
         if (!req.body.message) {
-            res.status(422).json({message: 'Expected prepareMessage object as body.'});
+            res.status(422).json({message: 'Expected prepareMessage object as body'});
             return;
         }
 
@@ -52,8 +57,9 @@ export function handleSIWELogout (req: Request, res: Response) {
         req.session.siwe = null;
         req.session.nonce = null;
         req.session.save(() => res.status(200).send(true));
+    } else {
+        req.session.save(() => res.status(500).json({message: 'User logout failed'}));
     }
-    req.session.save(() => res.status(500).json({ message: 'User logout failed'}));
 }
 
 export async function isUserAuthenticated (req: Request, res: Response) {
@@ -67,7 +73,10 @@ export async function isUserAuthenticated (req: Request, res: Response) {
     const currentTime = new Date();
     let isExpired = currentTime > authObject.expirationTime;
     if (isExpired) {
-        res.status(401).json({message: 'SIWE Signature has expired. Log in again.'});
+        hashSiweMessageMap.delete(req.body.sessionHash)
+        req.session.siwe = null;
+        req.session.nonce = null;
+        req.session.save(() => res.status(401).json({message: 'SIWE Signature has expired. Log in again.'}));
         return;
     }
 

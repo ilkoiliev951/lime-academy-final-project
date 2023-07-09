@@ -25,7 +25,12 @@ export async function main() {
         case COMMANDS.LOGOUT:
             if (!isNullUndefined(process.argv[3])) {
                 const userNonce = process.argv[3];
-                await signOut(await getWallet(userPrivateKey), userNonce)
+                const authenticated: boolean = await userAuthenticated(userNonce)
+                if (authenticated) {
+                    await signOut(await getWallet(userPrivateKey), userNonce)
+                } else {
+                    console.log('You have already signed out.')
+                }
             }
             break;
         case COMMANDS.LOCK:
@@ -111,7 +116,7 @@ function isValidPrivateKey(privateKey: string): boolean {
 }
 
 async function getWallet(userPrivateKey: string): Promise<Wallet> {
-   return new ethers.Wallet(userPrivateKey)
+    return new ethers.Wallet(userPrivateKey)
 }
 
 function printHelpOptions() {

@@ -60,6 +60,7 @@ export async function signInWithEthereum(wallet: Wallet) {
         sessionHash: hash
     }
 
+    console.log("NONCE: " + message.nonce)
     const res =  new Promise((resolve, reject) => {
         request({
             url: endpoint,
@@ -99,12 +100,15 @@ export async function signOut(wallet: Wallet, nonce) {
             body: reqBody
         }, (error, response) => {
             if (error) {
-                console.error(error);
+                console.log(error)
+                console.log('Logout unsuccessful.')
                 reject('Logging out was unsuccessful.')
             } else {
                 if (response.statusCode === 200) {
+                    console.log("Logged out successfully")
                     resolve(true);
                 } else {
+                    console.log('Logout unsuccessful.')
                     reject('Logging out was unsuccessful.');
                 }
             }
