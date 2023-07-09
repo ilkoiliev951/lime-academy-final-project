@@ -7,8 +7,14 @@
     "outDir": "build",
     "rootDir": "./",
     "strict": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "esModuleInterop": true,
-    "resolveJsonModule": true
-  }
+    "resolveJsonModule": true,
+    "strictPropertyInitialization": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictNullChecks": false,
+  },
+  "include": ["./test", "./scripts"],
+  "files": ["./hardhat.config.ts"]
 }

@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import "./GenericERC20.sol";
 import "./WrappedERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "./../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import "./../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 
 error InvalidAmount();
 error InvalidTokenType();
 error InvalidStringInput();
 error TokenDoesntExist();
-error InvalidUserAddress();
 
 contract EVMBridge is Ownable, ReentrancyGuard {
     mapping(string => address) public tokens;
@@ -96,14 +94,6 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         _;
     }
 
-    modifier isValidAddress(address _inputAddress) {
-        if (_inputAddress == address(0)) {
-            revert InvalidUserAddress();
-        }
-        _;
-
-    }
-
     function lock(
         address _user,
         address _tokenAddress,
@@ -113,7 +103,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         uint8 _v,
         bytes32 _r,
         bytes32 _s
-    ) external payable nonReentrant isValidAddress(_user) isValidAmountInput(_amount) isValidString(_tokenSymbol) {
+    ) external payable nonReentrant() isValidAmountInput(_amount) isValidString(_tokenSymbol) {
 
         IERC20Permit(_tokenAddress).permit(
             _user,
@@ -125,10 +115,11 @@ contract EVMBridge is Ownable, ReentrancyGuard {
             _s
         );
         IERC20(_tokenAddress).transferFrom(_user, address(this), _amount);
+
         emit TokenAmountLocked(msg.sender, _tokenSymbol, _tokenAddress, _amount, address(this), block.chainid, block.timestamp);
     }
 
-    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external nonReentrant isValidAmountInput(_amount) isValidString(_tokenSymbol) {
+    function release(uint256 _amount, address _tokenAddress, string memory _tokenSymbol) external nonReentrant() isValidAmountInput(_amount) isValidString(_tokenSymbol) {
         require(bridgeAmountIsValid(_amount, _tokenSymbol, "release") == true);
 
         address user = msg.sender;
@@ -143,7 +134,6 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         address _toUser,
         uint256 _amount) external
     nonReentrant()
-    isValidAddress(_toUser)
     isValidString(_tokenName)
     isValidString(_tokenSymbol)
     isValidAmountInput(_amount) {
@@ -193,8 +183,7 @@ contract EVMBridge is Ownable, ReentrancyGuard {
         bytes32 _s
     )
     external
-    nonReentrant
-    isValidAddress(_from)
+    nonReentrant()
     isValidString(_tokenSymbol)
     isValidAmountInput(_amount)
     returns (bool)

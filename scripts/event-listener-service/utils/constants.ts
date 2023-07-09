@@ -1,0 +1,2 @@
+export const SOURCE_NETWORK_TYPE = 'SOURCE'
+export const TARGET_NETWORK_TYPE = 'TARGET'
