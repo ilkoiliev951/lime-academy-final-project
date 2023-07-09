@@ -119,12 +119,10 @@ export async function signOut(wallet: Wallet, nonce) {
 
 export async function userAuthenticated(nonce) : Promise<boolean> {
     let endpoint = AUTH_BASE_URL + 'isAuthenticated';
-    console.log('nonce: ' + nonce)
     const reqBody = {
         sessionHash: getSessionHash(nonce)
     }
-
-    console.log('Hash: ' + reqBody.sessionHash + ' for nonce: ' + nonce)
+    console.log('Auth Info: Hash: ' + reqBody.sessionHash + ' for nonce: ' + nonce)
 
     return new Promise((resolve, reject) => {
         request({
