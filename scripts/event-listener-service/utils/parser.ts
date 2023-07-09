@@ -54,10 +54,8 @@ export async function parseDecodedReleaseEvent(decodedRelease: any, topics) {
             timestamp.toString()
         )
 
-        console.log(releaseEntity)
-
         await repository.saveReleaseEvent(releaseEntity)
-        await repository.updateBurntEvent(userAddress, amount, tokenSymbol)
+        await repository.updateBurntEvent(userAddress, amount.toString(), tokenSymbol)
     }
 }
 

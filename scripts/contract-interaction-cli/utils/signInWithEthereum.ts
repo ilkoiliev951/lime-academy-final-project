@@ -136,11 +136,10 @@ export async function userAuthenticated(nonce) : Promise<boolean> {
             if (error) {
                 console.info('User is not authenticated')
                 console.error(error);
-                console.log(response)
                 resolve(false)
             } else {
                 if (response.statusCode === 200) {
-                    console.log(response)
+                    console.log('User is authenticated')
                     resolve(true);
                 } else {
                     console.info('User is not authenticated')
