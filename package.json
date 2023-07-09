@@ -27,7 +27,7 @@
   },
   "homepage": "https://gitlab.com/iliev95/limeacademy-final-project#readme",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.1",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@nomiclabs/hardhat-waffle": "^2.0.5",
     "@openzeppelin/contracts": "^4.8.3",
