@@ -37,7 +37,7 @@
     "ethers": "^5.7.2",
     "hardhat": "^2.14.0",
     "hardhat-deploy": "^0.11.29",
-    "nodemon": "^2.0.22",
+    "nodemon": "^3.0.1",
     "rimraf": "^5.0.1",
     "solidity-coverage": "^0.8.2",
     "stdio": "^2.1.1",
