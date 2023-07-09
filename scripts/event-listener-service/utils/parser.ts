@@ -142,6 +142,6 @@ export async function parseMintEvent(decodedMintToken: any, topics) {
         )
 
         await repository.saveMintEvent(mintEntity)
-        await repository.updateLockedEvent(userAddress, amount, tokenSymbol)
+        await repository.updateLockedEvent(userAddress, amount.toString(), tokenSymbol)
     }
 }

@@ -37,10 +37,9 @@ export async function updateLockedEvent(userAddress, amount, tokenSymbol) {
             .getOne()
 
         if (lockEvent) {
-            console.log(lockEvent)
             const lockId = lockEvent.id
             await AppDataSource.manager.update(TokensLocked, {id: lockId}, {claimedOnTarget: true, active: false})
-            console.log('updated lock')
+            console.log('Updated lock event in DB')
         }
     }
 }
@@ -64,7 +63,7 @@ export async function updateBurntEvent (userAddress, amount, tokenSymbol){
         if (burnEvent) {
             const burnId = burnEvent.id
             await AppDataSource.manager.update(TokensBurnt, {id: burnId}, {releasedOnSource: true})
-            console.log('updated burn')
+            console.log('Updated burn event in DB')
         }
     }
 }
@@ -130,7 +129,7 @@ export async function updateLastProcessedTargetBlock(lastBlockNumber: number, ti
         .getOne()
 
     if (blockEntity) {
-        await AppDataSource.manager.update(BlockOnSource, {lastProcessedBlockId: blockEntity.lastProcessedBlockId}, {
+        await AppDataSource.manager.update(BlockOnTarget, {lastProcessedBlockId: blockEntity.lastProcessedBlockId}, {
             lastProcessedBlockId: lastBlockNumber,
             timestamp: timestamp
         })
