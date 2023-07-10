@@ -2,9 +2,9 @@
 
 ![Project Architecture](assets/architecture.png) 
 
-# Getting started 
+# Getting started
 
-You can either run the project with the already deployed contracts or deploy it 
+You can either run the project with the already deployed contracts or deploy new ones by running: bin/deploy.sh
 
 # Configuration Requirements 
 
