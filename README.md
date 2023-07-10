@@ -9,7 +9,6 @@ You can either run the project with the already deployed contracts or deploy new
 # Configuration Requirements 
 
 - NodeJS >= 19.0
-- Typescript
 - Docker environment and CLI - installed locally for running the PSQL docker image
 
 # Running the project
