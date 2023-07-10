@@ -6,16 +6,20 @@
 
 You can either run the project with the already deployed contracts or deploy new ones by running: bin/deploy.sh
 
-# Configuration Requirements 
+# Run Configuration Requirements 
 
 - NodeJS >= 19.0
-- Docker environment and CLI - installed locally for running the PSQL docker image
+- Docker environment and CLI - installed locally for running the PSQL docker image 
+- CLI tools: npm & npx 
+- Foundry
 
 # Running the project
 
 The project has been tested by using Sepolia as a source network and Goerli as the target network. 
 You can change those networks by providing different values in the config files.
 
+- Run npm install to download npm dependencies
+- Run npx hardhat compile to compile Solidity artifacts and typings
 - Provide values in secrets.json 
 - Provide values in scripts/validator-service/config/config.json
 - Run bin/boot-local-system.sh script in order to spin up the PSQL container, the express server and indexer all at once.
@@ -65,3 +69,13 @@ CLI authentication endpoints:
 
 IMPORTANT: The API authenticated will work only, when the CLI is used. A small change must be made to enable it 
 to work for external calls, however, the project deadline was way too close to implement it. 
+
+# Running Tests
+
+Hardhat tests: 
+- npx hardhat compile
+- npx hardhat test/coverage  
+
+Foundry tests: 
+- forge build
+- forge test
